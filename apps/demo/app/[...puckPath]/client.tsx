@@ -20,6 +20,7 @@ export function Client({ path, isEdit }: { path: string; isEdit: boolean }) {
           onPublish={async (data: Data) => {
             localStorage.setItem(key, JSON.stringify(data));
           }}
+          iframe={{ enabled: false }}
           plugins={[headingAnalyzer]}
           headerPath={path}
           overrides={{
