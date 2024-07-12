@@ -669,6 +669,14 @@
     "@dnd-kit/state" "^0.0.4"
     tslib "^2.6.2"
 
+"@dnd-kit/helpers@^0.0.4":
+  version "0.0.4"
+  resolved "https://registry.yarnpkg.com/@dnd-kit/helpers/-/helpers-0.0.4.tgz#75c6de4ba1c712676ceec98b35479e6a6b8c967f"
+  integrity sha512-1AHpYmSRbNcD5SB4sG8uoaOh27he0dRp+fz4h91WdPkajq5K1jwbhu59oC5ZwCQx87j5X0nUCoM8GEoCi0Ob8w==
+  dependencies:
+    "@dnd-kit/abstract" "^0.0.4"
+    tslib "^2.6.2"
+
 "@dnd-kit/react@^0.0.4":
   version "0.0.4"
   resolved "https://registry.yarnpkg.com/@dnd-kit/react/-/react-0.0.4.tgz#c5d283d181cc7492573b3e1b9047be63b91453fe"

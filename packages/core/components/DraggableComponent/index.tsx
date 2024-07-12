@@ -86,12 +86,9 @@ export const DraggableComponent = ({
     }
   }, []);
 
-  const { ref } = useSortable({ id, index });
-
   return (
     <div
       key={id}
-      ref={ref}
       // isDragDisabled={isDragDisabled}
       // disableSecondaryAnimation={disableSecondaryAnimation}
     >

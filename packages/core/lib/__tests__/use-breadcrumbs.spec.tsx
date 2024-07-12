@@ -35,6 +35,7 @@ const dropzoneContext: DropZoneContext = {
       label: "MyComponent",
     },
   },
+  collisionPriority: 1,
 };
 
 describe("use-breadcrumbs", () => {

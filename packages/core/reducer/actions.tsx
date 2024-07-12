@@ -5,6 +5,14 @@ export type InsertAction = {
   componentType: string;
   destinationIndex: number;
   destinationZone: string;
+  props?: object;
+};
+
+export type PreviewAction = {
+  type: "preview";
+  componentType: string;
+  destinationIndex: number;
+  destinationZone: string;
 };
 
 export type DuplicateAction = {
@@ -69,6 +77,7 @@ export type UnregisterZoneAction = {
 export type PuckAction = { recordHistory?: boolean } & (
   | ReorderAction
   | InsertAction
+  | PreviewAction
   | MoveAction
   | ReplaceAction
   | RemoveAction

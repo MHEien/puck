@@ -50,6 +50,7 @@ export const reduceData = (data: Data, action: PuckAction, config: Config) => {
       props: {
         ...(config.components[action.componentType].defaultProps || {}),
         id: generateId(action.componentType),
+        ...action.props,
       },
     };
 
@@ -78,6 +79,41 @@ export const reduceData = (data: Data, action: PuckAction, config: Config) => {
       },
     };
   }
+
+  // if (action.type === "preview") {
+  //   const emptyComponentData = {
+  //     type: "__placeholder",
+  //     props: {
+  //       id: "__placeholder",
+  //       componentType: action.componentType,
+  //     },
+  //   };
+
+  //   if (action.destinationZone === rootDroppableId) {
+  //     return {
+  //       ...data,
+  //       content: insert(
+  //         data.content,
+  //         action.destinationIndex,
+  //         emptyComponentData
+  //       ),
+  //     };
+  //   }
+
+  //   const newData = setupZone(data, action.destinationZone);
+
+  //   return {
+  //     ...data,
+  //     zones: {
+  //       ...newData.zones,
+  //       [action.destinationZone]: insert(
+  //         newData.zones[action.destinationZone],
+  //         action.destinationIndex,
+  //         emptyComponentData
+  //       ),
+  //     },
+  //   };
+  // }
 
   if (action.type === "duplicate") {
     const item = getItem(

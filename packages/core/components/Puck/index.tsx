@@ -47,6 +47,11 @@ import { defaultViewports } from "../ViewportControls/default-viewports";
 import { Viewports } from "../../types/Viewports";
 import { DragDropContext } from "../DragDropContext";
 import { IframeConfig } from "../../types/IframeConfig";
+import { DragDropProvider } from "@dnd-kit/react";
+import { Feedback } from "@dnd-kit/dom";
+import { setupZone } from "../../lib/setup-zone";
+import { rootDroppableId } from "../../lib/root-droppable-id";
+import { generateId } from "../../lib/generate-id";
 
 const getClassName = getClassNameFactory("Puck", styles);
 const getLayoutClassName = getClassNameFactory("PuckLayout", styles);
@@ -207,6 +212,8 @@ export function Puck<UserConfig extends Config = Config>({
   );
 
   const { data, ui } = appState;
+
+  console.log("data", data);
 
   const history = usePuckHistory({ dispatch, initialAppState, historyStore });
 
@@ -396,224 +403,331 @@ export function Puck<UserConfig extends Config = Config>({
           iframe,
         }}
       >
-        <DragDropContext
-          autoScrollerOptions={{ disabled: dnd?.disableAutoScroll }}
-          onDragUpdate={(update) => {
-            setDraggedItem({ ...draggedItem, ...update });
-            onDragStartOrUpdate(update);
-          }}
-          onBeforeDragStart={(start) => {
-            onDragStartOrUpdate(start);
-            setItemSelector(null);
-            dispatch({ type: "setUi", ui: { isDragging: true } });
-          }}
-          onDragEnd={(droppedItem) => {
-            setDraggedItem(undefined);
-            dispatch({ type: "setUi", ui: { isDragging: false } });
+        <DragDropProvider
+          plugins={[Feedback]}
+          onDragEnd={(event) => {
+            const { source, target } = event.operation;
 
-            // User cancel drag
-            if (!droppedItem.destination) {
-              return;
+            if (!target || !source) return;
+
+            console.log("end -- target", source);
+
+            const isOverZone = target.id.toString().indexOf("zone:") === 0;
+
+            let zone = source.data.group;
+            let index = source.data.index;
+
+            if (isOverZone) {
+              zone = target.id.toString().replace("zone:", "");
+              index = 0; // TODO place at end
             }
 
-            // New component
-            if (
-              droppedItem.source.droppableId.startsWith("component-list") &&
-              droppedItem.destination
-            ) {
-              const [_, componentType] = droppedItem.draggableId.split("::");
+            // Remove placeholder prop from component and sync to history
 
+            const item = getItem({ zone, index }, data);
+
+            if (!item) return;
+
+            const propsWithoutPlaceholder = {
+              ...item.props,
+            };
+
+            if (item.props.__placeholder) {
+              propsWithoutPlaceholder.id = generateId(item.type);
+
+              delete propsWithoutPlaceholder["__placeholder"];
+            }
+
+            dispatch({
+              type: "replace",
+              destinationIndex: source.data.index,
+              destinationZone: source.data.group,
+              data: { ...item, props: propsWithoutPlaceholder },
+            });
+          }}
+          onDragOver={(event) => {
+            // Prevent the optimistic re-ordering
+            event.preventDefault();
+
+            const { source, target } = event.operation;
+
+            if (!target || !source) return;
+
+            let isNewComponent = source.data.type === "drawer";
+            const isOverZone = target.id.toString().indexOf("zone:") === 0;
+
+            let targetZone = target.data.group;
+            let targetIndex = target.data.index;
+
+            if (isOverZone) {
+              targetZone = target.id.toString().replace("zone:", "");
+              targetIndex = 0; // TODO place at end
+            }
+
+            console.log(source, target);
+
+            if (isNewComponent) {
               dispatch({
                 type: "insert",
-                componentType: componentType || droppedItem.draggableId,
-                destinationIndex: droppedItem.destination!.index,
-                destinationZone: droppedItem.destination.droppableId,
+                componentType: source.id.toString(),
+                destinationIndex: targetIndex,
+                destinationZone: targetZone,
+                recordHistory: false,
+                props: {
+                  id: source.id.toString(),
+                  __placeholder: true,
+                },
               });
-
-              setItemSelector({
-                index: droppedItem.destination!.index,
-                zone: droppedItem.destination.droppableId,
+              // dispatch({
+              //   type: "insert",
+              //   componentType: source.id.toString(),
+              //   destinationIndex: targetIndex,
+              //   destinationZone: targetZone,
+              //   id: source.id.toString(),
+              //   recordHistory: false,
+              // });
+            } else if (source.data.group === targetZone) {
+              dispatch({
+                type: "reorder",
+                sourceIndex: source.data.index,
+                destinationIndex: targetIndex,
+                destinationZone: targetZone,
+                recordHistory: false,
               });
-
-              return;
             } else {
-              const { source, destination } = droppedItem;
-
-              if (source.droppableId === destination.droppableId) {
-                dispatch({
-                  type: "reorder",
-                  sourceIndex: source.index,
-                  destinationIndex: destination.index,
-                  destinationZone: destination.droppableId,
-                });
-              } else {
-                dispatch({
-                  type: "move",
-                  sourceZone: source.droppableId,
-                  sourceIndex: source.index,
-                  destinationIndex: destination.index,
-                  destinationZone: destination.droppableId,
-                });
-              }
-
-              setItemSelector({
-                index: destination.index,
-                zone: destination.droppableId,
+              dispatch({
+                type: "move",
+                sourceZone: source.data.group,
+                sourceIndex: source.data.index,
+                destinationIndex: targetIndex,
+                destinationZone: targetZone,
+                recordHistory: false,
               });
             }
           }}
         >
-          <DropZoneProvider
-            value={{
-              data,
-              itemSelector,
-              setItemSelector,
-              config,
-              dispatch,
-              draggedItem,
-              placeholderStyle,
-              mode: "edit",
-              areaId: "root",
+          <DragDropContext
+            autoScrollerOptions={{ disabled: dnd?.disableAutoScroll }}
+            onDragUpdate={(update) => {
+              setDraggedItem({ ...draggedItem, ...update });
+              onDragStartOrUpdate(update);
+            }}
+            onBeforeDragStart={(start) => {
+              onDragStartOrUpdate(start);
+              setItemSelector(null);
+              dispatch({ type: "setUi", ui: { isDragging: true } });
+            }}
+            onDragEnd={(droppedItem) => {
+              setDraggedItem(undefined);
+              dispatch({ type: "setUi", ui: { isDragging: false } });
+
+              // User cancel drag
+              if (!droppedItem.destination) {
+                return;
+              }
+
+              // New component
+              if (
+                droppedItem.source.droppableId.startsWith("component-list") &&
+                droppedItem.destination
+              ) {
+                const [_, componentType] = droppedItem.draggableId.split("::");
+
+                dispatch({
+                  type: "insert",
+                  componentType: componentType || droppedItem.draggableId,
+                  destinationIndex: droppedItem.destination!.index,
+                  destinationZone: droppedItem.destination.droppableId,
+                });
+
+                setItemSelector({
+                  index: droppedItem.destination!.index,
+                  zone: droppedItem.destination.droppableId,
+                });
+
+                return;
+              } else {
+                const { source, destination } = droppedItem;
+
+                if (source.droppableId === destination.droppableId) {
+                  dispatch({
+                    type: "reorder",
+                    sourceIndex: source.index,
+                    destinationIndex: destination.index,
+                    destinationZone: destination.droppableId,
+                  });
+                } else {
+                  dispatch({
+                    type: "move",
+                    sourceZone: source.droppableId,
+                    sourceIndex: source.index,
+                    destinationIndex: destination.index,
+                    destinationZone: destination.droppableId,
+                  });
+                }
+
+                setItemSelector({
+                  index: destination.index,
+                  zone: destination.droppableId,
+                });
+              }
             }}
           >
-            <CustomPuck>
-              {children || (
-                <div
-                  className={getLayoutClassName({
-                    leftSideBarVisible,
-                    menuOpen,
-                    mounted,
-                    rightSideBarVisible,
-                  })}
-                >
-                  <div className={getLayoutClassName("inner")}>
-                    <CustomHeader
-                      actions={
-                        <>
-                          <CustomHeaderActions>
-                            <Button
-                              onClick={() => {
-                                onPublish && onPublish(data);
-                              }}
-                              icon={<Globe size="14px" />}
-                            >
-                              Publish
-                            </Button>
-                          </CustomHeaderActions>
-                        </>
-                      }
-                    >
-                      <header className={getLayoutClassName("header")}>
-                        <div className={getLayoutClassName("headerInner")}>
-                          <div className={getLayoutClassName("headerToggle")}>
-                            <div
-                              className={getLayoutClassName(
-                                "leftSideBarToggle"
-                              )}
-                            >
-                              <IconButton
+            <DropZoneProvider
+              value={{
+                data,
+                itemSelector,
+                setItemSelector,
+                config,
+                dispatch,
+                draggedItem,
+                placeholderStyle,
+                mode: "edit",
+                areaId: "root",
+                collisionPriority: 1,
+              }}
+            >
+              <CustomPuck>
+                {children || (
+                  <div
+                    className={getLayoutClassName({
+                      leftSideBarVisible,
+                      menuOpen,
+                      mounted,
+                      rightSideBarVisible,
+                    })}
+                  >
+                    <div className={getLayoutClassName("inner")}>
+                      <CustomHeader
+                        actions={
+                          <>
+                            <CustomHeaderActions>
+                              <Button
                                 onClick={() => {
-                                  toggleSidebars("left");
+                                  onPublish && onPublish(data);
                                 }}
-                                title="Toggle left sidebar"
+                                icon={<Globe size="14px" />}
                               >
-                                <PanelLeft focusable="false" />
-                              </IconButton>
-                            </div>
-                            <div
-                              className={getLayoutClassName(
-                                "rightSideBarToggle"
-                              )}
-                            >
-                              <IconButton
-                                onClick={() => {
-                                  toggleSidebars("right");
-                                }}
-                                title="Toggle right sidebar"
-                              >
-                                <PanelRight focusable="false" />
-                              </IconButton>
-                            </div>
-                          </div>
-                          <div className={getLayoutClassName("headerTitle")}>
-                            <Heading rank={2} size="xs">
-                              {headerTitle || rootProps.title || "Page"}
-                              {headerPath && (
-                                <>
-                                  {" "}
-                                  <code
-                                    className={getLayoutClassName("headerPath")}
-                                  >
-                                    {headerPath}
-                                  </code>
-                                </>
-                              )}
-                            </Heading>
-                          </div>
-                          <div className={getLayoutClassName("headerTools")}>
-                            <div className={getLayoutClassName("menuButton")}>
-                              <IconButton
-                                onClick={() => {
-                                  return setMenuOpen(!menuOpen);
-                                }}
-                                title="Toggle menu bar"
-                              >
-                                {menuOpen ? (
-                                  <ChevronUp focusable="false" />
-                                ) : (
-                                  <ChevronDown focusable="false" />
-                                )}
-                              </IconButton>
-                            </div>
-                            <MenuBar
-                              appState={appState}
-                              data={data}
-                              dispatch={dispatch}
-                              onPublish={onPublish}
-                              menuOpen={menuOpen}
-                              renderHeaderActions={() => (
-                                <CustomHeaderActions>
-                                  <Button
-                                    onClick={() => {
-                                      onPublish && onPublish(data);
-                                    }}
-                                    icon={<Globe size="14px" />}
-                                  >
-                                    Publish
-                                  </Button>
-                                </CustomHeaderActions>
-                              )}
-                              setMenuOpen={setMenuOpen}
-                            />
-                          </div>
-                        </div>
-                      </header>
-                    </CustomHeader>
-                    <div className={getLayoutClassName("leftSideBar")}>
-                      <SidebarSection title="Components" noBorderTop>
-                        <Components />
-                      </SidebarSection>
-                      <SidebarSection title="Outline">
-                        <Outline />
-                      </SidebarSection>
-                    </div>
-                    <Canvas />
-                    <div className={getLayoutClassName("rightSideBar")}>
-                      <SidebarSection
-                        noPadding
-                        noBorderTop
-                        showBreadcrumbs
-                        title={selectedItem ? selectedComponentLabel : "Page"}
+                                Publish
+                              </Button>
+                            </CustomHeaderActions>
+                          </>
+                        }
                       >
-                        <Fields />
-                      </SidebarSection>
+                        <header className={getLayoutClassName("header")}>
+                          <div className={getLayoutClassName("headerInner")}>
+                            <div className={getLayoutClassName("headerToggle")}>
+                              <div
+                                className={getLayoutClassName(
+                                  "leftSideBarToggle"
+                                )}
+                              >
+                                <IconButton
+                                  onClick={() => {
+                                    toggleSidebars("left");
+                                  }}
+                                  title="Toggle left sidebar"
+                                >
+                                  <PanelLeft focusable="false" />
+                                </IconButton>
+                              </div>
+                              <div
+                                className={getLayoutClassName(
+                                  "rightSideBarToggle"
+                                )}
+                              >
+                                <IconButton
+                                  onClick={() => {
+                                    toggleSidebars("right");
+                                  }}
+                                  title="Toggle right sidebar"
+                                >
+                                  <PanelRight focusable="false" />
+                                </IconButton>
+                              </div>
+                            </div>
+                            <div className={getLayoutClassName("headerTitle")}>
+                              <Heading rank={2} size="xs">
+                                {headerTitle || rootProps.title || "Page"}
+                                {headerPath && (
+                                  <>
+                                    {" "}
+                                    <code
+                                      className={getLayoutClassName(
+                                        "headerPath"
+                                      )}
+                                    >
+                                      {headerPath}
+                                    </code>
+                                  </>
+                                )}
+                              </Heading>
+                            </div>
+                            <div className={getLayoutClassName("headerTools")}>
+                              <div className={getLayoutClassName("menuButton")}>
+                                <IconButton
+                                  onClick={() => {
+                                    return setMenuOpen(!menuOpen);
+                                  }}
+                                  title="Toggle menu bar"
+                                >
+                                  {menuOpen ? (
+                                    <ChevronUp focusable="false" />
+                                  ) : (
+                                    <ChevronDown focusable="false" />
+                                  )}
+                                </IconButton>
+                              </div>
+                              <MenuBar
+                                appState={appState}
+                                data={data}
+                                dispatch={dispatch}
+                                onPublish={onPublish}
+                                menuOpen={menuOpen}
+                                renderHeaderActions={() => (
+                                  <CustomHeaderActions>
+                                    <Button
+                                      onClick={() => {
+                                        onPublish && onPublish(data);
+                                      }}
+                                      icon={<Globe size="14px" />}
+                                    >
+                                      Publish
+                                    </Button>
+                                  </CustomHeaderActions>
+                                )}
+                                setMenuOpen={setMenuOpen}
+                              />
+                            </div>
+                          </div>
+                        </header>
+                      </CustomHeader>
+                      <div className={getLayoutClassName("leftSideBar")}>
+                        <SidebarSection title="Components" noBorderTop>
+                          <Components />
+                        </SidebarSection>
+                        <SidebarSection title="Outline">
+                          <Outline />
+                        </SidebarSection>
+                      </div>
+                      <Canvas />
+                      <div className={getLayoutClassName("rightSideBar")}>
+                        <SidebarSection
+                          noPadding
+                          noBorderTop
+                          showBreadcrumbs
+                          title={selectedItem ? selectedComponentLabel : "Page"}
+                        >
+                          <Fields />
+                        </SidebarSection>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
-            </CustomPuck>
-          </DropZoneProvider>
-        </DragDropContext>
+                )}
+              </CustomPuck>
+            </DropZoneProvider>
+          </DragDropContext>
+        </DragDropProvider>
       </AppProvider>
       <div id="puck-portal-root" className={getClassName("portal")} />
     </div>

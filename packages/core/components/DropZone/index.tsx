@@ -11,9 +11,30 @@ import { getZoneId } from "../../lib/get-zone-id";
 import { useAppContext } from "../Puck/context";
 import { DropZoneProps } from "./types";
 import { ComponentConfig, PuckContext } from "../../types/Config";
-import Example, { Sortable } from "../DraggableComponent/basic";
+import Example from "../DraggableComponent/basic";
+
+import { useDroppable } from "@dnd-kit/react";
+import { useSortable } from "@dnd-kit/react/sortable";
+import { DrawerItemInner } from "../Drawer";
 
 const getClassName = getClassNameFactory("DropZone", styles);
+
+function Sortable({ children, id, index, group, collisionPriority }) {
+  const { ref } = useSortable({
+    id,
+    index,
+    group,
+    data: { group, index },
+    collisionPriority,
+  });
+
+  return (
+    <div ref={ref}>
+      {/* {id} */}
+      <div className={styles.Item}>{children}</div>
+    </div>
+  );
+}
 
 export { DropZoneProvider, dropZoneContext } from "./context";
 
@@ -36,6 +57,7 @@ function DropZoneEdit({ zone, allow, disallow, style }: DropZoneProps) {
     hoveringComponent,
     zoneWillDrag,
     setZoneWillDrag = () => null,
+    collisionPriority,
   } = ctx! || {};
 
   let content = data.content || [];
@@ -85,6 +107,11 @@ function DropZoneEdit({ zone, allow, disallow, style }: DropZoneProps) {
   const userIsDragging = !!draggedItem;
   const draggingOverArea = userIsDragging && zoneArea === draggedSourceArea;
   const draggingNewComponent = draggedSourceId?.startsWith("component-list");
+
+  const { ref } = useDroppable({
+    id: `zone:${zoneCompound}`,
+    collisionPriority,
+  });
 
   if (
     !ctx?.config ||
@@ -177,8 +204,8 @@ function DropZoneEdit({ zone, allow, disallow, style }: DropZoneProps) {
       onMouseUp={() => {
         setZoneWillDrag("");
       }}
+      ref={ref}
     >
-      <Example />
       {content.map((item, i) => {
         const componentId = item.props.id;
 
@@ -204,7 +231,7 @@ function DropZoneEdit({ zone, allow, disallow, style }: DropZoneProps) {
           ? areasWithZones[componentId]
           : false;
 
-        const Render = config.components[item.type]
+        let Render = config.components[item.type]
           ? config.components[item.type].render
           : () => (
               <div style={{ padding: 48, textAlign: "center" }}>
@@ -212,14 +239,33 @@ function DropZoneEdit({ zone, allow, disallow, style }: DropZoneProps) {
               </div>
             );
 
+        if (item.props.__placeholder) {
+          // eslint-disable-next-line react/display-name
+          Render = () => <DrawerItemInner name={item.type as string} />;
+        }
+
         const componentConfig: ComponentConfig | undefined =
           config.components[item.type];
 
         const label = componentConfig?.["label"] ?? item.type.toString();
 
         return (
-          <Sortable group={zone} id={componentId} index={i}>
-            <Render {...defaultedProps} />
+          <Sortable
+            key={componentId}
+            group={zoneCompound}
+            id={componentId}
+            index={i}
+            collisionPriority={collisionPriority} // TODO this can make it hard to switch between sibling zones
+          >
+            <DropZoneProvider
+              value={{
+                ...ctx,
+                areaId: componentId,
+                collisionPriority: collisionPriority + 1,
+              }}
+            >
+              <Render {...defaultedProps} />
+            </DropZoneProvider>
           </Sortable>
         );
       })}
@@ -253,7 +299,12 @@ function DropZoneRender({ zone }: DropZoneProps) {
           return (
             <DropZoneProvider
               key={item.props.id}
-              value={{ data, config, areaId: item.props.id }}
+              value={{
+                data,
+                config,
+                areaId: item.props.id,
+                collisionPriority: 1,
+              }}
             >
               <Component.render
                 {...item.props}
@@ -273,8 +324,16 @@ export function DropZone(props: DropZoneProps) {
   const ctx = useContext(dropZoneContext);
 
   if (ctx?.mode === "edit") {
-    return <DropZoneEdit {...props} />;
+    return (
+      <>
+        <DropZoneEdit {...props} />
+      </>
+    );
   }
 
-  return <DropZoneRender {...props} />;
+  return (
+    <>
+      <DropZoneRender {...props} />
+    </>
+  );
 }

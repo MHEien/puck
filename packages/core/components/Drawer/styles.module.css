@@ -3,7 +3,7 @@
 }
 
 .DrawerItem-default .DrawerItem-draggableWrapper {
-  /* padding required here to prevent bug when cancelling a drag) */
+  /* padding required here to prevent bug when cancelling a drag */
   padding-bottom: 12px;
 }
 
