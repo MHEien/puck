@@ -23,6 +23,8 @@ export type DropZoneContext<UserConfig extends Config = Config> = {
   setItemSelector?: (newIndex: ItemSelector | null) => void;
   dispatch?: (action: PuckAction) => void;
   areaId?: string;
+  zoneCompound?: string;
+  index?: number;
   draggedItem?: DragStart & Partial<DragUpdate>;
   placeholderStyle?: CSSProperties;
   hoveringArea?: string | null;

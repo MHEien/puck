@@ -1,8 +1,9 @@
-import { ReactNode } from "react";
+import { ReactNode, Ref } from "react";
 import { ItemSelector } from "../lib/get-item";
 import { DropZoneProps } from "../components/DropZone/types";
 import { Viewport } from "./Viewports";
 import { Fields } from "./Fields";
+import { RefOrValue } from "@dnd-kit/react/utilities";
 
 type WithPuckProps<Props> = Props & {
   id: string;
@@ -26,6 +27,7 @@ export type PuckComponent<Props> = (
 export type PuckContext = {
   renderDropZone: React.FC<DropZoneProps>;
   isEditing: boolean;
+  dragRef: RefOrValue<Element>;
 };
 
 export type ComponentConfig<
@@ -37,6 +39,7 @@ export type ComponentConfig<
   label?: string;
   defaultProps?: DefaultProps;
   fields?: Fields<ComponentProps>;
+  inline?: boolean;
   resolveFields?: (
     data: DataShape,
     params: {

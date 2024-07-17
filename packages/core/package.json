@@ -60,8 +60,8 @@
     "typescript": "^4.5.2"
   },
   "dependencies": {
-    "@dnd-kit/react": "^0.0.4",
-    "@dnd-kit/helpers": "^0.0.4",
+    "@dnd-kit/react": "^0.0.5",
+    "@dnd-kit/helpers": "^0.0.5",
     "@measured/dnd": "16.6.0-canary.4cba1d1",
     "deep-diff": "^1.0.2",
     "object-hash": "^3.0.0",

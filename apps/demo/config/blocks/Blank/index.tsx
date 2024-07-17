@@ -8,9 +8,17 @@ const getClassName = getClassNameFactory("Hero", styles);
 export type HeroProps = {};
 
 export const Hero: ComponentConfig<HeroProps> = {
-  fields: {},
+  fields: {
+    myDropZone: {
+      type: "dropzone",
+    },
+  },
   defaultProps: {},
-  render: () => {
-    return <div className={getClassName()}></div>;
+  render: ({ myDropZone }) => {
+    return (
+      <div className={getClassName()}>
+        <DropZone style={{ display: "flex" }} zone="my-zone" />
+      </div>
+    );
   },
 };

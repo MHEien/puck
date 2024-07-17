@@ -2,6 +2,8 @@ import { Config, Data } from "@/core";
 import { ButtonGroup, ButtonGroupProps } from "./blocks/ButtonGroup";
 import { Card, CardProps } from "./blocks/Card";
 import { Columns, ColumnsProps } from "./blocks/Columns";
+import { Grid, GridProps } from "./blocks/Grid";
+import { GridItem, GridItemProps } from "./blocks/GridItem";
 import { Hero, HeroProps } from "./blocks/Hero";
 import { Heading, HeadingProps } from "./blocks/Heading";
 import { Flex, FlexProps } from "./blocks/Flex";
@@ -18,6 +20,8 @@ export type Props = {
   ButtonGroup: ButtonGroupProps;
   Card: CardProps;
   Columns: ColumnsProps;
+  Grid: GridProps;
+  GridItem: GridItemProps;
   Hero: HeroProps;
   Heading: HeadingProps;
   Flex: FlexProps;
@@ -43,7 +47,7 @@ export const conf: UserConfig = {
   },
   categories: {
     layout: {
-      components: ["Columns", "Flex", "VerticalSpace"],
+      components: ["Columns", "Grid", "GridItem", "Flex", "VerticalSpace"],
     },
     typography: {
       components: ["Heading", "Text"],
@@ -57,6 +61,8 @@ export const conf: UserConfig = {
     ButtonGroup,
     Card,
     Columns,
+    Grid,
+    GridItem,
     Hero,
     Heading,
     Flex,
@@ -68,6 +74,121 @@ export const conf: UserConfig = {
 };
 
 export const initialData: Record<string, Data> = {
+  "/grid": {
+    root: { props: { title: "Puck Example" } },
+    content: [
+      {
+        type: "Grid",
+        props: {
+          distribution: "auto",
+          id: "Grid-1",
+        },
+      },
+      {
+        type: "Grid",
+        props: {
+          distribution: "auto",
+          id: "Grid-2",
+        },
+      },
+    ],
+    zones: {
+      "Grid-2:grid": [
+        {
+          type: "Card",
+          props: {
+            title: "Built for content teams",
+            description:
+              "Puck enables content teams to make changes to their content without a developer or breaking the UI.",
+            icon: "pen-tool",
+            mode: "flat",
+            id: "Card-0d9077e00e0ad66c34c62ab6986967e1ce04f9e41",
+          },
+        },
+        {
+          type: "Card",
+          props: {
+            title: "Easy to integrate",
+            description:
+              "Front-end developers can easily integrate their own components using a familiar React API.",
+            icon: "git-merge",
+            mode: "flat",
+            id: "Card-978bef5d136d4b0d9855f5272429986ceb22e5a61",
+          },
+        },
+        {
+          type: "Card",
+          props: {
+            title: "No vendor lock-in",
+            description:
+              "Completely open-source, Puck is designed to be integrated into your existing React application.",
+            icon: "github",
+            mode: "flat",
+            id: "Card-133a61826f0019841aec6f0aec011bf07e6bc6de1",
+          },
+        },
+      ],
+      "Grid-1:grid": [
+        {
+          type: "GridItem",
+          props: {
+            id: "GridItem-1",
+          },
+        },
+        {
+          type: "GridItem",
+          props: {
+            id: "GridItem-2",
+          },
+        },
+        {
+          type: "GridItem",
+          props: {
+            id: "GridItem-3",
+          },
+        },
+      ],
+      "GridItem-1:items": [
+        {
+          type: "Card",
+          props: {
+            title: "Built for content teams",
+            description:
+              "Puck enables content teams to make changes to their content without a developer or breaking the UI.",
+            icon: "pen-tool",
+            mode: "flat",
+            id: "Card-0d9077e00e0ad66c34c62ab6986967e1ce04f9e4",
+          },
+        },
+      ],
+      "GridItem-2:items": [
+        {
+          type: "Card",
+          props: {
+            title: "Easy to integrate",
+            description:
+              "Front-end developers can easily integrate their own components using a familiar React API.",
+            icon: "git-merge",
+            mode: "flat",
+            id: "Card-978bef5d136d4b0d9855f5272429986ceb22e5a6",
+          },
+        },
+      ],
+      "GridItem-3:items": [
+        {
+          type: "Card",
+          props: {
+            title: "No vendor lock-in",
+            description:
+              "Completely open-source, Puck is designed to be integrated into your existing React application.",
+            icon: "github",
+            mode: "flat",
+            id: "Card-133a61826f0019841aec6f0aec011bf07e6bc6de",
+          },
+        },
+      ],
+    },
+  },
   "/": {
     content: [
       {

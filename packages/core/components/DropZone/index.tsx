@@ -1,6 +1,5 @@
 import { useContext, useEffect } from "react";
 import { DraggableComponent } from "../DraggableComponent";
-import { Droppable } from "../Droppable";
 import { getItem } from "../../lib/get-item";
 import { setupZone } from "../../lib/setup-zone";
 import { rootDroppableId } from "../../lib/root-droppable-id";
@@ -11,44 +10,30 @@ import { getZoneId } from "../../lib/get-zone-id";
 import { useAppContext } from "../Puck/context";
 import { DropZoneProps } from "./types";
 import { ComponentConfig, PuckContext } from "../../types/Config";
-import Example from "../DraggableComponent/basic";
 
 import { useDroppable } from "@dnd-kit/react";
-import { useSortable } from "@dnd-kit/react/sortable";
 import { DrawerItemInner } from "../Drawer";
 
 const getClassName = getClassNameFactory("DropZone", styles);
 
-function Sortable({ children, id, index, group, collisionPriority }) {
-  const { ref } = useSortable({
-    id,
-    index,
-    group,
-    data: { group, index },
-    collisionPriority,
-  });
-
-  return (
-    <div ref={ref}>
-      {/* {id} */}
-      <div className={styles.Item}>{children}</div>
-    </div>
-  );
-}
-
 export { DropZoneProvider, dropZoneContext } from "./context";
 
-function DropZoneEdit({ zone, allow, disallow, style }: DropZoneProps) {
+function DropZoneEdit({
+  zone,
+  allow,
+  disallow,
+  style,
+  className,
+  dragRef,
+}: DropZoneProps) {
   const appContext = useAppContext();
   const ctx = useContext(dropZoneContext);
 
   const {
     // These all need setting via context
     data,
-    dispatch = () => null,
     config,
     itemSelector,
-    setItemSelector = () => null,
     areaId,
     draggedItem,
     placeholderStyle,
@@ -190,7 +175,7 @@ function DropZoneEdit({ zone, allow, disallow, style }: DropZoneProps) {
 
   return (
     <div
-      className={getClassName({
+      className={`${getClassName({
         isRootZone,
         userIsDragging,
         draggingOverArea,
@@ -200,11 +185,15 @@ function DropZoneEdit({ zone, allow, disallow, style }: DropZoneProps) {
         isDisabled: !isEnabled,
         isAreaSelected,
         hasChildren: content.length > 0,
-      })}
-      onMouseUp={() => {
-        setZoneWillDrag("");
+      })}${className ? ` ${className}` : ""}`}
+      ref={(node) => {
+        ref(node);
+
+        if (typeof dragRef === "function") {
+          dragRef(node);
+        }
       }}
-      ref={ref}
+      style={style}
     >
       {content.map((item, i) => {
         const componentId = item.props.id;
@@ -212,6 +201,7 @@ function DropZoneEdit({ zone, allow, disallow, style }: DropZoneProps) {
         const puckProps: PuckContext = {
           renderDropZone: DropZone,
           isEditing: true,
+          dragRef: null,
         };
 
         const defaultedProps = {
@@ -222,10 +212,6 @@ function DropZoneEdit({ zone, allow, disallow, style }: DropZoneProps) {
         };
 
         const isSelected = selectedItem?.props.id === componentId || false;
-
-        const isDragging =
-          (draggedItem?.draggableId || "draggable-").split("draggable-")[1] ===
-          componentId;
 
         const containsZone = areasWithZones
           ? areasWithZones[componentId]
@@ -250,23 +236,42 @@ function DropZoneEdit({ zone, allow, disallow, style }: DropZoneProps) {
         const label = componentConfig?.["label"] ?? item.type.toString();
 
         return (
-          <Sortable
+          <DropZoneProvider
             key={componentId}
-            group={zoneCompound}
-            id={componentId}
-            index={i}
-            collisionPriority={collisionPriority} // TODO this can make it hard to switch between sibling zones
+            value={{
+              ...ctx,
+              areaId: componentId,
+              zoneCompound,
+              index: i,
+              collisionPriority: collisionPriority + 2,
+            }}
           >
-            <DropZoneProvider
-              value={{
-                ...ctx,
-                areaId: componentId,
-                collisionPriority: collisionPriority + 1,
-              }}
+            <DraggableComponent
+              id={componentId}
+              zoneCompound={zoneCompound}
+              collisionPriority={collisionPriority + 1}
+              index={i}
+              isLoading={appContext.componentState[componentId]?.loading}
+              isSelected={isSelected}
+              label={label}
             >
-              <Render {...defaultedProps} />
-            </DropZoneProvider>
-          </Sortable>
+              {(dragRef) =>
+                componentConfig.inline ? (
+                  <Render
+                    {...defaultedProps}
+                    puck={{
+                      ...defaultedProps.puck,
+                      dragRef,
+                    }}
+                  />
+                ) : (
+                  <div ref={dragRef}>
+                    <Render {...defaultedProps} />
+                  </div>
+                )
+              }
+            </DraggableComponent>
+          </DropZoneProvider>
         );
       })}
     </div>

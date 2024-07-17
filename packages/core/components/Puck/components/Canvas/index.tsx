@@ -159,6 +159,7 @@ export const Canvas = () => {
             overflow: iframe.enabled ? undefined : "auto",
           }}
           suppressHydrationWarning // Suppress hydration warning as frame is not visible until after load
+          id="puck-canvas-root"
         >
           <CustomPreview>
             <Preview />

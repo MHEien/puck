@@ -1,20 +1,32 @@
+// TODO
+// - [ ] dragging in of new items
+// - [ ] drag handlers when dragging
+// - [ ] reintroduce dropzone restrictions
+// - [ ] use data- attribute instead of ref for multi-framework future thinking
+// - [ ] (Clauderic) fix item resizing when dragged out of nested parent
+// - [ ] fix placeholder preview
+// - [ ] fix collisions when dragging out of nested dropzones
+// - [ ] (Clauderic?) fix infinite loop when dragging out of nested dropzones
+// - [ ] iframe support for dragging
+// - [ ] iframe support for overlays
+
 import {
-  CSSProperties,
   ReactNode,
+  Ref,
   SyntheticEvent,
+  useCallback,
   useEffect,
+  useRef,
   useState,
 } from "react";
-import { Draggable } from "@measured/dnd";
 import styles from "./styles.module.css";
 import getClassNameFactory from "../../lib/get-class-name-factory";
 import { Copy, Trash } from "lucide-react";
 import { useModifierHeld } from "../../lib/use-modifier-held";
-import { isIos } from "../../lib/is-ios";
 import { useAppContext } from "../Puck/context";
-import { DefaultDraggable } from "../Draggable";
 import { Loader } from "../Loader";
-import { useSortable } from "../../../../node_modules/@dnd-kit/react/sortable.cjs";
+import { useSortable } from "@dnd-kit/react/sortable";
+import { createPortal } from "react-dom";
 
 const getClassName = getClassNameFactory("DraggableComponent", styles);
 
@@ -26,127 +38,245 @@ const actionsRight = space;
 
 export const DraggableComponent = ({
   children,
+  collisionPriority,
   id,
   index,
+  zoneCompound,
   isLoading = false,
   isSelected = false,
-  onClick = () => null,
-  onMount = () => null,
-  onMouseDown = () => null,
-  onMouseUp = () => null,
-  onMouseOver = () => null,
-  onMouseOut = () => null,
-  onDelete = () => null,
-  onDuplicate = () => null,
   debug,
   label,
-  isLocked = false,
-  isDragDisabled,
-  forceHover = false,
   indicativeHover = false,
-  style,
 }: {
-  children: ReactNode;
+  children: (ref: Ref<any>) => ReactNode;
+  collisionPriority: number;
   id: string;
   index: number;
+  zoneCompound: string;
   isSelected?: boolean;
-  onClick?: (e: SyntheticEvent) => void;
-  onMount?: () => void;
-  onMouseDown?: (e: SyntheticEvent) => void;
-  onMouseUp?: (e: SyntheticEvent) => void;
-  onMouseOver?: (e: SyntheticEvent) => void;
-  onMouseOut?: (e: SyntheticEvent) => void;
-  onDelete?: (e: SyntheticEvent) => void;
-  onDuplicate?: (e: SyntheticEvent) => void;
   debug?: string;
   label?: string;
-  isLocked: boolean;
   isLoading: boolean;
   isDragDisabled?: boolean;
-  forceHover?: boolean;
   indicativeHover?: boolean;
-  style?: CSSProperties;
 }) => {
-  const { zoomConfig } = useAppContext();
+  const { zoomConfig, dispatch, iframe } = useAppContext();
   const isModifierHeld = useModifierHeld("Alt");
 
-  const { status } = useAppContext();
+  const { ref: sortableRef } = useSortable({
+    id,
+    index,
+    group: zoneCompound,
+    data: { group: zoneCompound, index },
+    collisionPriority,
+  });
 
-  const El = status !== "LOADING" ? Draggable : DefaultDraggable;
+  const ref = useRef<Element>();
 
-  useEffect(onMount, []);
+  const refSetter = useCallback(
+    (el: Element | null) => {
+      sortableRef(el);
 
-  const [disableSecondaryAnimation, setDisableSecondaryAnimation] =
-    useState(false);
+      if (el) {
+        ref.current = el;
+      }
+    },
+    [sortableRef]
+  );
+
+  const overlayRef = useRef<HTMLDivElement>(null);
+
+  const sync = useCallback(() => {
+    if (!ref.current || !overlayRef.current) return;
+
+    const rect = ref.current!.getBoundingClientRect();
+
+    // TODO change this logic when using iframes
+    if (iframe.enabled) {
+    } else {
+      const previewEl = document.getElementById("puck-preview");
+
+      if (!previewEl) return;
+
+      const previewRect = previewEl.getBoundingClientRect();
+
+      overlayRef.current!.style.left = `${rect.left - previewRect.left}px`;
+      overlayRef.current!.style.top = `${rect.top - previewRect.top}px`;
+      overlayRef.current!.style.height = `${rect.height}px`;
+      overlayRef.current!.style.width = `${rect.width}px`;
+    }
+
+    setRect(rect);
+  }, [ref, overlayRef]);
+
+  const onClick = useCallback(
+    (e: SyntheticEvent | Event) => {
+      e.stopPropagation();
+      dispatch({
+        type: "setUi",
+        ui: {
+          itemSelector: { index, zone: zoneCompound },
+        },
+      });
+    },
+    [index, zoneCompound, id]
+  );
+
+  const onDuplicate = useCallback(
+    (e: SyntheticEvent) => {
+      e.stopPropagation();
+      dispatch({
+        type: "duplicate",
+        sourceIndex: index,
+        sourceZone: zoneCompound,
+      });
+    },
+    [index, zoneCompound]
+  );
+
+  const onRemove = useCallback(
+    (e: SyntheticEvent) => {
+      e.stopPropagation();
+      dispatch({
+        type: "remove",
+        index: index,
+        zone: zoneCompound,
+      });
+    },
+    [index, zoneCompound]
+  );
+
+  const [hover, setHover] = useState(false);
 
   useEffect(() => {
-    // Disable animations on iOS to prevent GPU memory crashes
-    if (isIos()) {
-      setDisableSecondaryAnimation(true);
+    if (!ref.current) return;
+    const el = ref.current as HTMLElement;
+
+    const onMouseOver = (e: Event) => {
+      e.stopPropagation();
+      setHover(true);
+    };
+    const onMouseOut = (e: Event) => {
+      e.stopPropagation();
+      setHover(false);
+    };
+
+    el.setAttribute("data-puck-component", "");
+    el.style.position = "relative";
+    el.addEventListener("click", onClick);
+    el.addEventListener("mouseover", onMouseOver);
+    el.addEventListener("mouseout", onMouseOut);
+
+    return () => {
+      el.removeEventListener("click", onClick);
+      el.removeEventListener("mouseover", onMouseOver);
+      el.removeEventListener("mouseout", onMouseOut);
+    };
+  }, [ref, overlayRef, onClick]);
+
+  const [rect, setRect] = useState<DOMRect | null>(null);
+
+  useEffect(sync, [ref]);
+
+  const isVisible = isSelected || hover || indicativeHover;
+
+  useEffect(() => {
+    if (!ref.current) return;
+
+    const el = ref.current as HTMLElement;
+
+    const canvasRoot = document.getElementById("puck-canvas-root");
+
+    const onCanvasScroll = () => {
+      requestAnimationFrame(() => {
+        const rect = ref.current!.getBoundingClientRect();
+
+        // Apply styles directly as lower latency than relying on React render loop
+        overlayRef.current!.style.top = `${rect.top}px`;
+      });
+    };
+
+    if (isVisible) {
+      canvasRoot?.addEventListener("scroll", onCanvasScroll);
+    } else {
+      canvasRoot?.removeEventListener("scroll", onCanvasScroll);
     }
-  }, []);
+
+    const observer = new ResizeObserver(() => {
+      sync();
+    });
+
+    observer.observe(el);
+
+    return () => {
+      if (!ref.current) return;
+
+      observer.disconnect();
+      canvasRoot?.removeEventListener("scroll", onCanvasScroll);
+    };
+  }, [ref, overlayRef, isSelected, hover, rect]);
 
   return (
-    <div
-      key={id}
-      // isDragDisabled={isDragDisabled}
-      // disableSecondaryAnimation={disableSecondaryAnimation}
-    >
-      {label}
-      {/* <div
-        className={getClassName({
-          isSelected,
-          isModifierHeld,
-          // isDragging: snapshot.isDragging,
-          isLocked,
-          forceHover,
-          indicativeHover,
-        })}
-        style={{
-          ...style,
-          cursor: isModifierHeld ? "initial" : "grab",
-        }}
-        onMouseOver={onMouseOver}
-        onMouseOut={onMouseOut}
-        onMouseDown={onMouseDown}
-        onMouseUp={onMouseUp}
-        onClick={onClick}
-      >
-        {debug}
-        {isLoading && (
-          <div className={getClassName("loadingOverlay")}>
-            <Loader />
-          </div>
-        )}
-
-        <div
-          className={getClassName("actionsOverlay")}
-          style={{
-            top: actionsOverlayTop / zoomConfig.zoom,
-          }}
-        >
+    <>
+      {isVisible &&
+        createPortal(
           <div
-            className={getClassName("actions")}
-            style={{
-              transform: `scale(${1 / zoomConfig.zoom}`,
-              top: actionsTop / zoomConfig.zoom,
-              right: actionsRight / zoomConfig.zoom,
-            }}
+            className={getClassName({
+              isSelected,
+              isModifierHeld,
+              hover: hover || indicativeHover,
+            })}
+            ref={overlayRef}
+            // onMouseOver={(e) => {
+            //   e.stopPropagation();
+            //   setHover(true);
+            // }}
+            // onMouseOut={(e) => {
+            //   e.stopPropagation();
+            //   setHover(false);
+            // }}
+            // onClick={onClick}
           >
-            {label && (
-              <div className={getClassName("actionsLabel")}>{label}</div>
+            {debug}
+            {isLoading && (
+              <div className={getClassName("loadingOverlay")}>
+                <Loader />
+              </div>
             )}
-            <button className={getClassName("action")} onClick={onDuplicate}>
-              <Copy size={16} />
-            </button>
-            <button className={getClassName("action")} onClick={onDelete}>
-              <Trash size={16} />
-            </button>
-          </div>
-        </div>
-        <div className={getClassName("overlay")} />
-        <div className={getClassName("contents")}>{children}</div>
-      </div> */}
-    </div>
+
+            <div
+              className={getClassName("actionsOverlay")}
+              style={{
+                top: actionsOverlayTop / zoomConfig.zoom,
+              }}
+            >
+              <div
+                className={getClassName("actions")}
+                style={{
+                  transform: `scale(${1 / zoomConfig.zoom}`,
+                  top: actionsTop / zoomConfig.zoom,
+                  right: actionsRight / zoomConfig.zoom,
+                }}
+              >
+                {label && (
+                  <div className={getClassName("actionsLabel")}>{label}</div>
+                )}
+                <button
+                  className={getClassName("action")}
+                  onClick={onDuplicate}
+                >
+                  <Copy size={16} />
+                </button>
+                <button className={getClassName("action")} onClick={onRemove}>
+                  <Trash size={16} />
+                </button>
+              </div>
+            </div>
+            <div className={getClassName("overlay")} />
+          </div>,
+          document.getElementById("puck-preview") || document.body
+        )}
+      {children(refSetter)}
+    </>
   );
 };

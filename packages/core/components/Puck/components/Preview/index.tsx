@@ -1,6 +1,6 @@
 import { DropZone } from "../../../DropZone";
 import { rootDroppableId } from "../../../../lib/root-droppable-id";
-import { ReactNode, useCallback, useRef } from "react";
+import { ReactNode, useCallback, useEffect, useRef } from "react";
 import { useAppContext } from "../../context";
 import AutoFrame from "../../../AutoFrame";
 import styles from "./styles.module.css";
@@ -57,7 +57,7 @@ export const Preview = ({ id = "puck-preview" }: { id?: string }) => {
           </Page>
         </AutoFrame>
       ) : (
-        <div id="preview-frame" className={getClassName("frame")}>
+        <div id="preview-frame" className={getClassName("frame")} ref={ref}>
           <Page dispatch={dispatch} state={state} {...rootProps}>
             <DropZone zone={rootDroppableId} />
           </Page>
