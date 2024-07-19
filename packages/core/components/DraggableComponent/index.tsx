@@ -4,7 +4,7 @@
 // - [ ] reintroduce dropzone restrictions
 // - [ ] use data- attribute instead of ref for multi-framework future thinking
 // - [ ] (Clauderic) fix item resizing when dragged out of nested parent
-// - [ ] fix placeholder preview
+// - [x] fix placeholder preview
 // - [ ] fix collisions when dragging out of nested dropzones
 // - [ ] (Clauderic?) fix infinite loop when dragging out of nested dropzones
 // - [ ] iframe support for dragging
