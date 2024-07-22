@@ -49,6 +49,7 @@ import { DragDropContext } from "../DragDropContext";
 import { IframeConfig } from "../../types/IframeConfig";
 import { DragDropProvider, useDragDropManager } from "@dnd-kit/react";
 import { DragDropManager, Feedback } from "@dnd-kit/dom";
+import type { Draggable } from "@dnd-kit/dom";
 import { setupZone } from "../../lib/setup-zone";
 import { rootDroppableId } from "../../lib/root-droppable-id";
 import { generateId } from "../../lib/generate-id";
@@ -251,9 +252,8 @@ export function Puck<UserConfig extends Config = Config>({
 
   const { onDragStartOrUpdate, placeholderStyle } = usePlaceholderStyle();
 
-  const [draggedItem, setDraggedItem] = useState<
-    DragStart & Partial<DragUpdate>
-  >();
+  const [draggedItem, setDraggedItem] = useState<Draggable | null>();
+  const [isDragging, setIsDragging] = useState<boolean>(false);
 
   // DEPRECATED
   const rootProps = data.root.props || data.root;
@@ -410,13 +410,19 @@ export function Puck<UserConfig extends Config = Config>({
       >
         <DragDropProvider
           manager={manager}
-          // plugins={[Feedback]}
+          onDragStart={() => {
+            console.log("drag start");
+            setIsDragging(true);
+          }}
           onDragEnd={(event) => {
             const { source, target } = event.operation;
 
             if (!target || !source) return;
 
-            console.log("end -- target", source);
+            setDraggedItem(null);
+            setIsDragging(false);
+
+            console.log("onDragEnd", source, target);
 
             const isOverZone = target.id.toString().indexOf("zone:") === 0;
 
@@ -455,9 +461,14 @@ export function Puck<UserConfig extends Config = Config>({
             // Prevent the optimistic re-ordering
             event.preventDefault();
 
+            // Drag end can sometimes trigger after drag
+            if (!isDragging) return;
+
             const { source, target } = event.operation;
 
             if (!target || !source) return;
+
+            console.log("onDragOver", source, target);
 
             let isNewComponent = source.data.type === "drawer";
             const isOverZone = target.id.toString().indexOf("zone:") === 0;
@@ -469,8 +480,6 @@ export function Puck<UserConfig extends Config = Config>({
               targetZone = target.id.toString().replace("zone:", "");
               targetIndex = 0; // TODO place at end
             }
-
-            console.log(source, target);
 
             if (isNewComponent) {
               dispatch({
@@ -510,6 +519,9 @@ export function Puck<UserConfig extends Config = Config>({
                 recordHistory: false,
               });
             }
+          }}
+          onBeforeDragStart={(op) => {
+            setDraggedItem(op.operation.source);
           }}
         >
           <DropZoneProvider

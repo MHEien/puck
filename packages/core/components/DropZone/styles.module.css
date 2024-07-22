@@ -6,28 +6,9 @@
   outline-offset: -2px;
   width: 100%;
 }
-/* 
-.DropZone-content {
-  min-height: 128px;
-  height: 100%;
-} */
-
-.DropZone--userIsDragging .DropZone-content {
-  pointer-events: all;
-}
-
-.DropZone--userIsDragging:not(.DropZone--draggingOverArea):not(
-    .DropZone--draggingNewComponent
-  )
-  > .DropZone-content {
-  pointer-events: none;
-}
 
 .DropZone--isAreaSelected,
-.DropZone--draggingOverArea:not(:has(.DropZone--hoveringOverArea)),
-.DropZone--hoveringOverArea:not(.DropZone--isDisabled):not(
-    .DropZone--isRootZone
-  ):not(.DropZone--hasChildren) {
+.DropZone--draggingOverArea:not(.DropZone--isRootZone) {
   background: color-mix(in srgb, var(--puck-color-azure-09) 30%, transparent);
   outline: 2px dashed var(--puck-color-azure-08);
 }

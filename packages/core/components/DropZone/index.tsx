@@ -1,4 +1,4 @@
-import { useContext, useEffect } from "react";
+import { useContext, useEffect, useRef } from "react";
 import { DraggableComponent } from "../DraggableComponent";
 import { getItem } from "../../lib/get-item";
 import { setupZone } from "../../lib/setup-zone";
@@ -13,6 +13,7 @@ import { ComponentConfig, PuckContext } from "../../types/Config";
 
 import { useDroppable } from "@dnd-kit/react";
 import { DrawerItemInner } from "../Drawer";
+import { pointerIntersection } from "@dnd-kit/collision";
 
 const getClassName = getClassNameFactory("DropZone", styles);
 
@@ -43,6 +44,7 @@ function DropZoneEdit({
     zoneWillDrag,
     setZoneWillDrag = () => null,
     collisionPriority,
+    setContainsDropZone,
   } = ctx! || {};
 
   let content = data.content || [];
@@ -56,6 +58,10 @@ function DropZoneEdit({
 
   // Register and unregister zone on mount
   useEffect(() => {
+    if (setContainsDropZone) {
+      setContainsDropZone(true);
+    }
+
     if (ctx?.registerZone) {
       ctx?.registerZone(zoneCompound);
     }
@@ -74,41 +80,7 @@ function DropZoneEdit({
     }
   }
 
-  const isRootZone =
-    zoneCompound === rootDroppableId ||
-    zone === rootDroppableId ||
-    areaId === "root";
-
-  const draggedSourceId = draggedItem && draggedItem.source.droppableId;
-  const draggedDestinationId =
-    draggedItem && draggedItem.destination?.droppableId;
-  const [zoneArea] = getZoneId(zoneCompound);
-
-  // we use the index rather than spread to prevent down-level iteration warnings: https://stackoverflow.com/questions/53441292/why-downleveliteration-is-not-on-by-default
-  const [draggedSourceArea] = getZoneId(draggedSourceId);
-
-  const userWillDrag = zoneWillDrag === zone;
-
-  const userIsDragging = !!draggedItem;
-  const draggingOverArea = userIsDragging && zoneArea === draggedSourceArea;
-  const draggingNewComponent = draggedSourceId?.startsWith("component-list");
-
-  const { ref } = useDroppable({
-    id: `zone:${zoneCompound}`,
-    collisionPriority,
-  });
-
-  if (
-    !ctx?.config ||
-    !ctx.setHoveringArea ||
-    !ctx.setHoveringZone ||
-    !ctx.setHoveringComponent ||
-    !ctx.setItemSelector ||
-    !ctx.registerPath ||
-    !ctx.dispatch
-  ) {
-    return <div>DropZone requires context to work.</div>;
-  }
+  const ref = useRef<HTMLDivElement | null>();
 
   const {
     hoveringArea = "root",
@@ -116,41 +88,72 @@ function DropZoneEdit({
     hoveringZone,
     setHoveringZone,
     setHoveringComponent,
-  } = ctx;
+  } = ctx!;
 
-  const hoveringOverArea = hoveringArea
-    ? hoveringArea === zoneArea
-    : isRootZone;
+  // Don't combine inline event handlers and event listeners, as they don't bubble together
+  useEffect(() => {
+    if (!ref.current) return;
+
+    const onMouseOver = (e: Event) => {
+      if (!setHoveringArea || !setHoveringZone) return;
+
+      e.stopPropagation();
+
+      // console.log("dz", e.currentTarget, e.target, areaId, zoneCompound);
+
+      setHoveringArea(areaId || zoneArea);
+      setHoveringZone(zoneCompound);
+    };
+
+    ref.current.addEventListener("mouseover", onMouseOver);
+
+    return () => {
+      ref.current?.removeEventListener("mouseover", onMouseOver);
+    };
+  }, [ref]);
+
+  const isRootZone =
+    zoneCompound === rootDroppableId ||
+    zone === rootDroppableId ||
+    areaId === "root";
+
+  // const draggedSourceId = draggedItem && draggedItem.source.droppableId;
+  // const draggedDestinationId =
+  //   draggedItem && draggedItem.destination?.droppableId;
+  const [zoneArea] = getZoneId(zoneCompound);
+
+  // we use the index rather than spread to prevent down-level iteration warnings: https://stackoverflow.com/questions/53441292/why-downleveliteration-is-not-on-by-default
+  // const [draggedSourceArea] = getZoneId(draggedSourceId);
+
+  const userWillDrag = zoneWillDrag === zone;
+
+  const hoveringOverArea = hoveringArea ? hoveringArea === areaId : isRootZone;
   const hoveringOverZone = hoveringZone === zoneCompound;
 
-  let isEnabled = userWillDrag;
+  const userIsDragging = !!draggedItem;
+  const draggingOverArea = userIsDragging && hoveringOverArea;
+  const draggingNewComponent = false; //draggedSourceId?.startsWith("component-list");
 
-  /**
-   * We enable zones when:
-   *
-   * 1. This is a new component and the user is dragging over the area. This
-   *    check prevents flickering if you move cursor outside of zone
-   *    but within the area
-   * 2. This is an existing component and the user a) is dragging over the
-   *    area (which prevents drags between zone areas, breaking the rules
-   *    of @hello-pangea/dnd) and b) has the cursor hovering directly over
-   *    the specific zone (which increases robustness when using flex
-   *    layouts)
-   */
-  if (userIsDragging) {
-    if (draggingNewComponent) {
-      if (appContext.safariFallbackMode) {
-        isEnabled = true;
-      } else {
-        isEnabled = hoveringOverArea;
-      }
-    } else {
-      isEnabled = draggingOverArea && hoveringOverZone;
-    }
+  // if (
+  //   !ctx?.config ||
+  //   !ctx.setHoveringArea ||
+  //   !ctx.setHoveringZone ||
+  //   !ctx.setHoveringComponent ||
+  //   !ctx.setItemSelector ||
+  //   !ctx.registerPath ||
+  //   !ctx.dispatch
+  // ) {
+  //   return <div>DropZone requires context to work.</div>;
+  // }
+
+  let isEnabled = true;
+
+  if (draggedItem) {
+    isEnabled = hoveringOverArea && hoveringOverZone;
   }
 
-  if (isEnabled && userIsDragging && (allow || disallow)) {
-    const [_, componentType] = draggedItem.draggableId.split("::");
+  if (isEnabled && (allow || disallow) && draggedItem) {
+    const { componentType } = draggedItem.data;
 
     if (disallow) {
       const defaultedAllow = allow || [];
@@ -170,8 +173,16 @@ function DropZoneEdit({
     }
   }
 
+  const isDropEnabled = isEnabled && content.length === 0;
+
+  const { ref: dropRef } = useDroppable({
+    id: `zone:${zoneCompound}`,
+    collisionPriority: collisionPriority,
+    disabled: !isDropEnabled,
+  });
+
   const selectedItem = itemSelector ? getItem(itemSelector, data) : null;
-  const isAreaSelected = selectedItem && zoneArea === selectedItem.props.id;
+  const isAreaSelected = selectedItem && areaId === selectedItem.props.id;
 
   return (
     <div
@@ -179,22 +190,33 @@ function DropZoneEdit({
         isRootZone,
         userIsDragging,
         draggingOverArea,
-        hoveringOverArea,
+        // hoveringOverArea,
         draggingNewComponent,
-        isDestination: draggedDestinationId === zoneCompound,
+        // isDestination: draggedDestinationId === zoneCompound,
         isDisabled: !isEnabled,
         isAreaSelected,
         hasChildren: content.length > 0,
       })}${className ? ` ${className}` : ""}`}
       ref={(node) => {
-        ref(node);
+        ref.current = node;
 
-        if (typeof dragRef === "function") {
-          dragRef(node);
-        }
+        // if (isEnabled) {
+        dropRef(node);
+        if (dragRef) dragRef(node);
+        // }
       }}
       style={style}
     >
+      <p>
+        hoveringZone: {JSON.stringify(hoveringZone)} (
+        {JSON.stringify(zoneCompound)})
+      </p>
+      <p>
+        hoveringArea: {JSON.stringify(hoveringArea)} ({JSON.stringify(areaId)})
+      </p>
+      <p>hoveringOverArea: {JSON.stringify(hoveringOverArea)}</p>
+      <p>isEnabled: {JSON.stringify(isEnabled)}</p>
+      <p>collisionPriority: {JSON.stringify(collisionPriority)}</p>
       {content.map((item, i) => {
         const componentId = item.props.id;
 
@@ -236,42 +258,34 @@ function DropZoneEdit({
         const label = componentConfig?.["label"] ?? item.type.toString();
 
         return (
-          <DropZoneProvider
+          <DraggableComponent
             key={componentId}
-            value={{
-              ...ctx,
-              areaId: componentId,
-              zoneCompound,
-              index: i,
-              collisionPriority: collisionPriority + 2,
-            }}
+            id={componentId}
+            componentType={item.type as string}
+            zoneCompound={zoneCompound}
+            collisionPriority={collisionPriority + 1}
+            index={i}
+            isLoading={appContext.componentState[componentId]?.loading}
+            isSelected={isSelected}
+            label={label}
+            isDragDisabled={!isEnabled}
           >
-            <DraggableComponent
-              id={componentId}
-              zoneCompound={zoneCompound}
-              collisionPriority={collisionPriority + 1}
-              index={i}
-              isLoading={appContext.componentState[componentId]?.loading}
-              isSelected={isSelected}
-              label={label}
-            >
-              {(dragRef) =>
-                componentConfig.inline ? (
-                  <Render
-                    {...defaultedProps}
-                    puck={{
-                      ...defaultedProps.puck,
-                      dragRef,
-                    }}
-                  />
-                ) : (
-                  <div ref={dragRef}>
-                    <Render {...defaultedProps} />
-                  </div>
-                )
-              }
-            </DraggableComponent>
-          </DropZoneProvider>
+            {(dragRef) =>
+              componentConfig.inline ? (
+                <Render
+                  {...defaultedProps}
+                  puck={{
+                    ...defaultedProps.puck,
+                    dragRef,
+                  }}
+                />
+              ) : (
+                <div ref={dragRef}>
+                  <Render {...defaultedProps} />
+                </div>
+              )
+            }
+          </DraggableComponent>
         );
       })}
     </div>

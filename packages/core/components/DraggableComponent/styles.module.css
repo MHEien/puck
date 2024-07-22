@@ -15,12 +15,6 @@
   overflow: hidden;
 }
 
-.DraggableComponent-contents {
-  position: relative; /* Reset stacking context */
-  pointer-events: none;
-  z-index: 0;
-}
-
 .DraggableComponent-overlay {
   cursor: pointer;
   height: 100%;
@@ -60,12 +54,10 @@
 .DraggableComponent--hover:not(.DraggableComponent--isLocked)
   > .DraggableComponent-overlay {
   background: var(--overlay-background);
-  pointer-events: none;
 }
 
 .DraggableComponent--forceHover > .DraggableComponent-overlay {
   background: var(--overlay-background);
-  pointer-events: none;
 }
 
 .DraggableComponent--hover:not(.DraggableComponent--isSelected)

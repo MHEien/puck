@@ -20,6 +20,10 @@ const styles = `
 [data-dnd-placeholder] *, [data-dnd-placeholder]::after, [data-dnd-placeholder]::before {
   opacity: 0 !important;
 }
+
+[data-dnd-dragging] {
+  pointer-events: none !important;
+}
 `;
 
 export const useInjectStyleSheet = (initialStyles: string) => {

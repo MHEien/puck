@@ -1,20 +1,26 @@
 // TODO
+// - [x] fix placeholder preview
+// - [ ] fix collisions when dragging out of nested dropzones
 // - [ ] dragging in of new items
 // - [ ] drag handlers when dragging
 // - [ ] reintroduce dropzone restrictions
 // - [ ] use data- attribute instead of ref for multi-framework future thinking
 // - [ ] (Clauderic) fix item resizing when dragged out of nested parent
-// - [x] fix placeholder preview
-// - [ ] fix collisions when dragging out of nested dropzones
 // - [ ] (Clauderic?) fix infinite loop when dragging out of nested dropzones
 // - [ ] iframe support for dragging
 // - [ ] iframe support for overlays
+// - [ ] Can't always scroll whilst dragging
+// - [ ] register path data
+// - [ ] Fix some state issues where item is duplicated after dropping between zones
+// - [ ] Test multiple root dropzones
+// - [ ] Custom collision detector to mimic over-midpoint dragging?
 
 import {
   ReactNode,
   Ref,
   SyntheticEvent,
   useCallback,
+  useContext,
   useEffect,
   useRef,
   useState,
@@ -27,6 +33,8 @@ import { useAppContext } from "../Puck/context";
 import { Loader } from "../Loader";
 import { useSortable } from "@dnd-kit/react/sortable";
 import { createPortal } from "react-dom";
+import { pointerIntersection } from "@dnd-kit/collision";
+import { dropZoneContext, DropZoneProvider } from "../DropZone";
 
 const getClassName = getClassNameFactory("DraggableComponent", styles);
 
@@ -39,6 +47,7 @@ const actionsRight = space;
 export const DraggableComponent = ({
   children,
   collisionPriority,
+  componentType,
   id,
   index,
   zoneCompound,
@@ -47,8 +56,10 @@ export const DraggableComponent = ({
   debug,
   label,
   indicativeHover = false,
+  isDragDisabled,
 }: {
   children: (ref: Ref<any>) => ReactNode;
+  componentType: string;
   collisionPriority: number;
   id: string;
   index: number;
@@ -67,11 +78,14 @@ export const DraggableComponent = ({
     id,
     index,
     group: zoneCompound,
-    data: { group: zoneCompound, index },
+    data: { group: zoneCompound, index, componentType },
     collisionPriority,
+    disabled: isDragDisabled,
   });
 
   const ref = useRef<Element>();
+
+  const [containsDropZone, setContainsDropZone] = useState(false);
 
   const refSetter = useCallback(
     (el: Element | null) => {
@@ -152,27 +166,50 @@ export const DraggableComponent = ({
     if (!ref.current) return;
     const el = ref.current as HTMLElement;
 
-    const onMouseOver = (e: Event) => {
+    const _onMouseOver = (e: Event) => {
       e.stopPropagation();
+
+      // console.log("cp", e.currentTarget, e.target, id, zoneCompound);
+
       setHover(true);
+
+      if (containsDropZone) {
+        if (ctx?.setHoveringArea) {
+          ctx.setHoveringArea(id);
+        }
+
+        // if (ctx?.registerZone) {
+        //   ctx?.registerZone(zoneCompound);
+        // }
+      } else {
+        if (ctx?.setHoveringArea) {
+          ctx.setHoveringArea(ctx.areaId || "");
+        }
+
+        if (ctx?.setHoveringZone) {
+          ctx.setHoveringZone(zoneCompound);
+        }
+      }
     };
-    const onMouseOut = (e: Event) => {
+
+    const _onMouseOut = (e: Event) => {
       e.stopPropagation();
+
       setHover(false);
     };
 
     el.setAttribute("data-puck-component", "");
     el.style.position = "relative";
     el.addEventListener("click", onClick);
-    el.addEventListener("mouseover", onMouseOver);
-    el.addEventListener("mouseout", onMouseOut);
+    el.addEventListener("mouseover", _onMouseOver);
+    el.addEventListener("mouseout", _onMouseOut);
 
     return () => {
       el.removeEventListener("click", onClick);
-      el.removeEventListener("mouseover", onMouseOver);
-      el.removeEventListener("mouseout", onMouseOut);
+      el.removeEventListener("mouseover", _onMouseOver);
+      el.removeEventListener("mouseout", _onMouseOut);
     };
-  }, [ref, overlayRef, onClick]);
+  }, [ref, overlayRef, onClick, containsDropZone, zoneCompound, id]);
 
   const [rect, setRect] = useState<DOMRect | null>(null);
 
@@ -181,7 +218,7 @@ export const DraggableComponent = ({
   const isVisible = isSelected || hover || indicativeHover;
 
   useEffect(() => {
-    if (!ref.current) return;
+    if (!ref.current || !overlayRef.current) return;
 
     const el = ref.current as HTMLElement;
 
@@ -189,6 +226,8 @@ export const DraggableComponent = ({
 
     const onCanvasScroll = () => {
       requestAnimationFrame(() => {
+        if (!ref.current || !overlayRef.current) return;
+
         const rect = ref.current!.getBoundingClientRect();
 
         // Apply styles directly as lower latency than relying on React render loop
@@ -216,8 +255,20 @@ export const DraggableComponent = ({
     };
   }, [ref, overlayRef, isSelected, hover, rect]);
 
+  const ctx = useContext(dropZoneContext);
+
   return (
-    <>
+    <DropZoneProvider
+      value={{
+        ...ctx!,
+        areaId: id,
+        zoneCompound,
+        index,
+        collisionPriority: collisionPriority + 1,
+        setContainsDropZone,
+      }}
+    >
+      {/* <p>collisionPriority: {JSON.stringify(collisionPriority)}</p> */}
       {isVisible &&
         createPortal(
           <div
@@ -277,6 +328,6 @@ export const DraggableComponent = ({
           document.getElementById("puck-preview") || document.body
         )}
       {children(refSetter)}
-    </>
+    </DropZoneProvider>
   );
 };

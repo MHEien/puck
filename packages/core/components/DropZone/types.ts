@@ -7,5 +7,5 @@ export type DropZoneProps = {
   disallow?: string[];
   style?: CSSProperties;
   className?: string;
-  dragRef?: RefOrValue<Element>;
+  dragRef?: (element: Element | null) => void;
 };

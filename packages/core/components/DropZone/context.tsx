@@ -1,6 +1,7 @@
 import {
   CSSProperties,
   ReactNode,
+  SetStateAction,
   createContext,
   useCallback,
   useState,
@@ -12,6 +13,7 @@ import { PuckAction } from "../../reducer";
 import { rootDroppableId } from "../../lib/root-droppable-id";
 import { useDebounce } from "use-debounce";
 import { getZoneId } from "../../lib/get-zone-id";
+import type { Draggable } from "@dnd-kit/dom";
 
 export type PathData = Record<string, { path: string[]; label: string }>;
 
@@ -25,7 +27,7 @@ export type DropZoneContext<UserConfig extends Config = Config> = {
   areaId?: string;
   zoneCompound?: string;
   index?: number;
-  draggedItem?: DragStart & Partial<DragUpdate>;
+  draggedItem?: Draggable | null;
   placeholderStyle?: CSSProperties;
   hoveringArea?: string | null;
   setHoveringArea?: (area: string | null) => void;
@@ -44,6 +46,7 @@ export type DropZoneContext<UserConfig extends Config = Config> = {
   zoneWillDrag?: string;
   setZoneWillDrag?: (zone: string) => void;
   collisionPriority: number;
+  setContainsDropZone?: React.Dispatch<SetStateAction<boolean>>;
 } | null;
 
 export const dropZoneContext = createContext<DropZoneContext>(null);
