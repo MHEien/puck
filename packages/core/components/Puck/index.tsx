@@ -516,6 +516,7 @@ export function Puck<UserConfig extends Config = Config>({
           }}
           onBeforeDragStart={(op) => {
             setDraggedItem(op.operation.source);
+            setItemSelector(null);
           }}
         >
           <DropZoneProvider

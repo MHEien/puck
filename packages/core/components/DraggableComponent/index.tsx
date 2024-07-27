@@ -77,7 +77,7 @@ export const DraggableComponent = ({
   const isModifierHeld = useModifierHeld("Alt");
   const ctx = useContext(dropZoneContext);
 
-  const { ref: sortableRef } = useSortable({
+  const { ref: sortableRef, status } = useSortable({
     id,
     index,
     group: zoneCompound,
@@ -86,6 +86,10 @@ export const DraggableComponent = ({
     // collisionDetector: pointerIntersection,
     disabled: !isEnabled,
   });
+
+  const userIsDragging = !!ctx?.draggedItem;
+
+  const isDragging = status === "dragging";
 
   const ref = useRef<Element>();
 
@@ -143,8 +147,6 @@ export const DraggableComponent = ({
       overlayRef.current!.style.height = `${rect.height}px`;
       overlayRef.current!.style.width = `${rect.width}px`;
     }
-
-    setRect(rect);
   }, [ref, overlayRef]);
 
   const onClick = useCallback(
@@ -192,6 +194,9 @@ export const DraggableComponent = ({
 
     const _onMouseOver = (e: Event) => {
       const parentIsDroppableTarget = isDroppableTarget();
+
+      // User is dragging, but not this item
+      if (userIsDragging && !isDragging) return;
 
       // TODO conflict between this rule, and area restrictions (when hovering over area and not dropzone)
       // TODO what you really need to check is whether children are droppable
@@ -252,16 +257,25 @@ export const DraggableComponent = ({
       el.removeEventListener("mouseover", _onMouseOver);
       el.removeEventListener("mouseout", _onMouseOut);
     };
-  }, [ref, overlayRef, onClick, containsActiveZone, zoneCompound, id]);
-
-  const [rect, setRect] = useState<DOMRect | null>(null);
+  }, [
+    ref,
+    overlayRef,
+    onClick,
+    containsActiveZone,
+    zoneCompound,
+    id,
+    userIsDragging,
+    isDragging,
+  ]);
 
   useEffect(sync, [ref]);
 
-  const isVisible = isSelected || hover || indicativeHover;
+  const isVisible = isSelected || hover || indicativeHover || isDragging;
 
   useEffect(() => {
-    if (!ref.current || !overlayRef.current) return;
+    if (!ref.current || !overlayRef.current) {
+      return;
+    }
 
     const el = ref.current as HTMLElement;
 
@@ -271,10 +285,7 @@ export const DraggableComponent = ({
       requestAnimationFrame(() => {
         if (!ref.current || !overlayRef.current) return;
 
-        const rect = ref.current!.getBoundingClientRect();
-
-        // Apply styles directly as lower latency than relying on React render loop
-        overlayRef.current!.style.top = `${rect.top}px`;
+        sync();
       });
     };
 
@@ -290,13 +301,29 @@ export const DraggableComponent = ({
 
     observer.observe(el);
 
+    let isObserving = true;
+
+    const loop = () => {
+      requestAnimationFrame(() => {
+        if (isObserving && isVisible && userIsDragging) {
+          sync();
+          loop();
+        }
+      });
+    };
+
+    if (isVisible && userIsDragging) {
+      loop();
+    }
+
     return () => {
       if (!ref.current) return;
 
+      isObserving = false;
       observer.disconnect();
       canvasRoot?.removeEventListener("scroll", onCanvasScroll);
     };
-  }, [ref, overlayRef, isSelected, hover, rect]);
+  }, [ref, overlayRef, isVisible, userIsDragging, hover]);
 
   return (
     <DropZoneProvider
@@ -318,6 +345,7 @@ export const DraggableComponent = ({
         createPortal(
           <div
             className={getClassName({
+              isDragging,
               isSelected,
               isModifierHeld,
               hover: hover || indicativeHover,
