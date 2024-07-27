@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 
-import { DefaultRootProps } from "@/core";
+import { DefaultRootProps, DropZone } from "@/core";
 import { Footer } from "./components/Footer";
 import { Header } from "./components/Header";
 
@@ -13,7 +13,7 @@ function Root({ children, puck }: RootProps) {
   return (
     <>
       <Header editMode={puck.isEditing} />
-      {children}
+      <DropZone zone={"default-zone"} disallow={["GridItem"]} />
       <Footer>
         <Footer.List title="Section">
           <Footer.Link href="">Label</Footer.Link>

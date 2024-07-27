@@ -289,8 +289,6 @@ export const reduceData = (data: Data, action: PuckAction, config: Config) => {
   if (action.type === "unregisterZone") {
     const _zones = { ...(data.zones || {}) };
 
-    console.log("unregister", action, _zones);
-
     if (_zones[action.zone]) {
       zoneCache[action.zone] = _zones[action.zone];
 

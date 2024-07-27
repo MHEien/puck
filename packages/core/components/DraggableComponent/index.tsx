@@ -51,12 +51,13 @@ export const DraggableComponent = ({
   id,
   index,
   zoneCompound,
+  isDroppableTarget,
   isLoading = false,
   isSelected = false,
   debug,
   label,
   indicativeHover = false,
-  isDragDisabled,
+  isEnabled,
 }: {
   children: (ref: Ref<any>) => ReactNode;
   componentType: string;
@@ -65,27 +66,50 @@ export const DraggableComponent = ({
   index: number;
   zoneCompound: string;
   isSelected?: boolean;
+  isDroppableTarget: () => boolean;
   debug?: string;
   label?: string;
   isLoading: boolean;
-  isDragDisabled?: boolean;
+  isEnabled?: boolean;
   indicativeHover?: boolean;
 }) => {
   const { zoomConfig, dispatch, iframe } = useAppContext();
   const isModifierHeld = useModifierHeld("Alt");
+  const ctx = useContext(dropZoneContext);
 
   const { ref: sortableRef } = useSortable({
     id,
     index,
     group: zoneCompound,
     data: { group: zoneCompound, index, componentType },
-    collisionPriority,
-    disabled: isDragDisabled,
+    collisionPriority: isEnabled ? collisionPriority : 0,
+    // collisionDetector: pointerIntersection,
+    disabled: !isEnabled,
   });
 
   const ref = useRef<Element>();
 
-  const [containsDropZone, setContainsDropZone] = useState(false);
+  const [localZones, setLocalZones] = useState<Record<string, boolean>>({});
+
+  // TODO 26/08/24 this doesn't work when we have more than one level of zone
+  // TODO for example, try dragging a card to next grid item in `/grid` demo
+  // TODO and note it jumps to root
+  // TODO to fix, it needs to propagate upstream
+  const registerLocalZone = useCallback(
+    (zoneCompound: string, active: boolean) => {
+      // Propagate local zone
+      ctx?.registerLocalZone?.(zoneCompound, active);
+
+      setLocalZones((obj) => ({
+        ...obj,
+        [zoneCompound]: active,
+      }));
+    },
+    [setLocalZones]
+  );
+
+  const containsActiveZone =
+    Object.values(localZones).filter(Boolean).length > 0;
 
   const refSetter = useCallback(
     (el: Element | null) => {
@@ -167,13 +191,32 @@ export const DraggableComponent = ({
     const el = ref.current as HTMLElement;
 
     const _onMouseOver = (e: Event) => {
-      e.stopPropagation();
+      const parentIsDroppableTarget = isDroppableTarget();
 
-      // console.log("cp", e.currentTarget, e.target, id, zoneCompound);
+      // TODO conflict between this rule, and area restrictions (when hovering over area and not dropzone)
+      // TODO what you really need to check is whether children are droppable
+      // TODO and they are droppable, then you skip this
+      // if (parentIsDroppableTarget) {
+      //   console.log(`Enabling parent of ${id} to capture drop`);
+      //   return;
+      // }
+
+      // console.log(`${id} lives in a droppable target`);
+
+      console.log(
+        "cp",
+        e.currentTarget,
+        e.target,
+        id,
+        zoneCompound,
+        localZones
+      );
+
+      e.stopPropagation();
 
       setHover(true);
 
-      if (containsDropZone) {
+      if (containsActiveZone) {
         if (ctx?.setHoveringArea) {
           ctx.setHoveringArea(id);
         }
@@ -209,7 +252,7 @@ export const DraggableComponent = ({
       el.removeEventListener("mouseover", _onMouseOver);
       el.removeEventListener("mouseout", _onMouseOut);
     };
-  }, [ref, overlayRef, onClick, containsDropZone, zoneCompound, id]);
+  }, [ref, overlayRef, onClick, containsActiveZone, zoneCompound, id]);
 
   const [rect, setRect] = useState<DOMRect | null>(null);
 
@@ -255,8 +298,6 @@ export const DraggableComponent = ({
     };
   }, [ref, overlayRef, isSelected, hover, rect]);
 
-  const ctx = useContext(dropZoneContext);
-
   return (
     <DropZoneProvider
       value={{
@@ -265,10 +306,14 @@ export const DraggableComponent = ({
         zoneCompound,
         index,
         collisionPriority: collisionPriority + 1,
-        setContainsDropZone,
+        registerLocalZone,
       }}
     >
+      {/* <p>isEnabled: {JSON.stringify(isEnabled)}</p> */}
       {/* <p>collisionPriority: {JSON.stringify(collisionPriority)}</p> */}
+      {/* <p>localZones: {JSON.stringify(localZones)}</p> */}
+      {/* <p>containsActiveZone: {JSON.stringify(containsActiveZone)}</p> */}
+      {/* <p>is parent droppable(): {JSON.stringify(isDroppableTarget())}</p> */}
       {isVisible &&
         createPortal(
           <div

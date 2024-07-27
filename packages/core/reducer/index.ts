@@ -66,7 +66,7 @@ export function createReducer<UserConfig extends Config = Config>({
 
     const newState = { data, ui };
 
-    console.log(action, state, newState);
+    // console.log(action, state, newState);
 
     return newState;
   }, record);

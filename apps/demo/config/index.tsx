@@ -84,13 +84,13 @@ export const initialData: Record<string, Data> = {
           id: "Grid-1",
         },
       },
-      {
-        type: "Grid",
-        props: {
-          distribution: "auto",
-          id: "Grid-2",
-        },
-      },
+      // {
+      //   type: "Grid",
+      //   props: {
+      //     distribution: "auto",
+      //     id: "Grid-2",
+      //   },
+      // },
     ],
     zones: {
       "Grid-2:grid": [

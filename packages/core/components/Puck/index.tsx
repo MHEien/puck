@@ -217,8 +217,6 @@ export function Puck<UserConfig extends Config = Config>({
 
   const { data, ui } = appState;
 
-  console.log("data", data);
-
   const history = usePuckHistory({ dispatch, initialAppState, historyStore });
 
   const { resolveData, componentState } = useResolvedData(
@@ -253,7 +251,6 @@ export function Puck<UserConfig extends Config = Config>({
   const { onDragStartOrUpdate, placeholderStyle } = usePlaceholderStyle();
 
   const [draggedItem, setDraggedItem] = useState<Draggable | null>();
-  const [isDragging, setIsDragging] = useState<boolean>(false);
 
   // DEPRECATED
   const rootProps = data.root.props || data.root;
@@ -410,17 +407,14 @@ export function Puck<UserConfig extends Config = Config>({
       >
         <DragDropProvider
           manager={manager}
-          onDragStart={() => {
-            console.log("drag start");
-            setIsDragging(true);
-          }}
           onDragEnd={(event) => {
             const { source, target } = event.operation;
 
-            if (!target || !source) return;
-
             setDraggedItem(null);
-            setIsDragging(false);
+
+            // TODO tidy up placeholder if aborted
+
+            if (!target || !source) return;
 
             console.log("onDragEnd", source, target);
 
@@ -462,13 +456,13 @@ export function Puck<UserConfig extends Config = Config>({
             event.preventDefault();
 
             // Drag end can sometimes trigger after drag
-            if (!isDragging) return;
+            if (!draggedItem) return;
 
             const { source, target } = event.operation;
 
             if (!target || !source) return;
 
-            console.log("onDragOver", source, target);
+            // console.log("onDragOver", source, target);
 
             let isNewComponent = source.data.type === "drawer";
             const isOverZone = target.id.toString().indexOf("zone:") === 0;

@@ -46,7 +46,7 @@ export type DropZoneContext<UserConfig extends Config = Config> = {
   zoneWillDrag?: string;
   setZoneWillDrag?: (zone: string) => void;
   collisionPriority: number;
-  setContainsDropZone?: React.Dispatch<SetStateAction<boolean>>;
+  registerLocalZone?: (zone: string, active: boolean) => void; // A zone as it pertains to the current area
 } | null;
 
 export const dropZoneContext = createContext<DropZoneContext>(null);
