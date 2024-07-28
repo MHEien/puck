@@ -12,8 +12,11 @@ const styles = `
 }
 
 [data-dnd-placeholder] {
-  background: var(--puck-color-azure-06); !important;
+  background: var(--puck-color-azure-06) !important;
+  border: none !important;
+  color: #00000000 !important;
   opacity: 0.3 !important;
+  outline: none !important;
   transition: none !important;
 }
 
