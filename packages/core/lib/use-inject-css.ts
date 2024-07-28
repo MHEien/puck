@@ -2,16 +2,16 @@ import { useEffect, useState } from "react";
 
 const styles = `
 /* Prevent user from interacting with underlying component */
-[data-puck-component] * {
+#puck-preview [data-puck-component] * {
   user-select: none;
 }
 
-[data-puck-component] {
+#puck-preview [data-puck-component] {
   cursor: grab;
   pointer-events: auto !important;
 }
 
-[data-dnd-placeholder] {
+#puck-preview [data-dnd-placeholder] {
   background: var(--puck-color-azure-06) !important;
   border: none !important;
   color: #00000000 !important;
@@ -20,11 +20,11 @@ const styles = `
   transition: none !important;
 }
 
-[data-dnd-placeholder] *, [data-dnd-placeholder]::after, [data-dnd-placeholder]::before {
+#puck-preview [data-dnd-placeholder] *, #puck-preview [data-dnd-placeholder]::after, #puck-preview [data-dnd-placeholder]::before {
   opacity: 0 !important;
 }
 
-[data-dnd-dragging] {
+#puck-preview [data-dnd-dragging] {
   pointer-events: none !important;
 }
 `;
