@@ -250,8 +250,6 @@ export function Puck<UserConfig extends Config = Config>({
 
   const { onDragStartOrUpdate, placeholderStyle } = usePlaceholderStyle();
 
-  const [draggedItem, setDraggedItem] = useState<Draggable | null>();
-
   // DEPRECATED
   const rootProps = data.root.props || data.root;
 
@@ -405,272 +403,140 @@ export function Puck<UserConfig extends Config = Config>({
           iframe,
         }}
       >
-        <DragDropProvider
-          manager={manager}
-          onDragEnd={(event) => {
-            const { source, target } = event.operation;
-
-            setDraggedItem(null);
-
-            // TODO tidy up placeholder if aborted
-
-            if (!target || !source) return;
-
-            console.log("onDragEnd", source, target);
-
-            const isOverZone = target.id.toString().indexOf("zone:") === 0;
-
-            let zone = source.data.group;
-            let index = source.data.index;
-
-            if (isOverZone) {
-              zone = target.id.toString().replace("zone:", "");
-              index = 0; // TODO place at end
-            }
-
-            // Remove placeholder prop from component and sync to history
-
-            const item = getItem({ zone, index }, data);
-
-            if (!item) return;
-
-            const propsWithoutPlaceholder = {
-              ...item.props,
-            };
-
-            if (item.props.__placeholder) {
-              propsWithoutPlaceholder.id = generateId(item.type);
-
-              delete propsWithoutPlaceholder["__placeholder"];
-            }
-
-            dispatch({
-              type: "replace",
-              destinationIndex: source.data.index,
-              destinationZone: source.data.group,
-              data: { ...item, props: propsWithoutPlaceholder },
-            });
-          }}
-          onDragOver={(event) => {
-            // Prevent the optimistic re-ordering
-            event.preventDefault();
-
-            // Drag end can sometimes trigger after drag
-            if (!draggedItem) return;
-
-            const { source, target } = event.operation;
-
-            if (!target || !source) return;
-
-            // console.log("onDragOver", source, target);
-
-            let isNewComponent = source.data.type === "drawer";
-            const isOverZone = target.id.toString().indexOf("zone:") === 0;
-
-            let targetZone = target.data.group;
-            let targetIndex = target.data.index;
-
-            if (isOverZone) {
-              targetZone = target.id.toString().replace("zone:", "");
-              targetIndex = 0; // TODO place at end
-            }
-
-            if (isNewComponent) {
-              dispatch({
-                type: "insert",
-                componentType: source.data.componentType,
-                destinationIndex: targetIndex,
-                destinationZone: targetZone,
-                recordHistory: false,
-                props: {
-                  id: source.id.toString(),
-                  __placeholder: true,
-                },
-              });
-              // dispatch({
-              //   type: "insert",
-              //   componentType: source.id.toString(),
-              //   destinationIndex: targetIndex,
-              //   destinationZone: targetZone,
-              //   id: source.id.toString(),
-              //   recordHistory: false,
-              // });
-            } else if (source.data.group === targetZone) {
-              dispatch({
-                type: "reorder",
-                sourceIndex: source.data.index,
-                destinationIndex: targetIndex,
-                destinationZone: targetZone,
-                recordHistory: false,
-              });
-            } else {
-              dispatch({
-                type: "move",
-                sourceZone: source.data.group,
-                sourceIndex: source.data.index,
-                destinationIndex: targetIndex,
-                destinationZone: targetZone,
-                recordHistory: false,
-              });
-            }
-          }}
-          onBeforeDragStart={(op) => {
-            setDraggedItem(op.operation.source);
-            setItemSelector(null);
-          }}
-        >
-          <DropZoneProvider
-            value={{
-              data,
-              itemSelector,
-              setItemSelector,
-              config,
-              dispatch,
-              draggedItem,
-              placeholderStyle,
-              mode: "edit",
-              areaId: "root",
-              collisionPriority: 1,
-            }}
-          >
-            <CustomPuck>
-              {children || (
-                <div
-                  className={getLayoutClassName({
-                    leftSideBarVisible,
-                    menuOpen,
-                    mounted,
-                    rightSideBarVisible,
-                  })}
-                >
-                  <div className={getLayoutClassName("inner")}>
-                    <CustomHeader
-                      actions={
-                        <>
-                          <CustomHeaderActions>
-                            <Button
+        <DragDropContext>
+          <CustomPuck>
+            {children || (
+              <div
+                className={getLayoutClassName({
+                  leftSideBarVisible,
+                  menuOpen,
+                  mounted,
+                  rightSideBarVisible,
+                })}
+              >
+                <div className={getLayoutClassName("inner")}>
+                  <CustomHeader
+                    actions={
+                      <>
+                        <CustomHeaderActions>
+                          <Button
+                            onClick={() => {
+                              onPublish && onPublish(data);
+                            }}
+                            icon={<Globe size="14px" />}
+                          >
+                            Publish
+                          </Button>
+                        </CustomHeaderActions>
+                      </>
+                    }
+                  >
+                    <header className={getLayoutClassName("header")}>
+                      <div className={getLayoutClassName("headerInner")}>
+                        <div className={getLayoutClassName("headerToggle")}>
+                          <div
+                            className={getLayoutClassName("leftSideBarToggle")}
+                          >
+                            <IconButton
                               onClick={() => {
-                                onPublish && onPublish(data);
+                                toggleSidebars("left");
                               }}
-                              icon={<Globe size="14px" />}
+                              title="Toggle left sidebar"
                             >
-                              Publish
-                            </Button>
-                          </CustomHeaderActions>
-                        </>
-                      }
-                    >
-                      <header className={getLayoutClassName("header")}>
-                        <div className={getLayoutClassName("headerInner")}>
-                          <div className={getLayoutClassName("headerToggle")}>
-                            <div
-                              className={getLayoutClassName(
-                                "leftSideBarToggle"
-                              )}
-                            >
-                              <IconButton
-                                onClick={() => {
-                                  toggleSidebars("left");
-                                }}
-                                title="Toggle left sidebar"
-                              >
-                                <PanelLeft focusable="false" />
-                              </IconButton>
-                            </div>
-                            <div
-                              className={getLayoutClassName(
-                                "rightSideBarToggle"
-                              )}
-                            >
-                              <IconButton
-                                onClick={() => {
-                                  toggleSidebars("right");
-                                }}
-                                title="Toggle right sidebar"
-                              >
-                                <PanelRight focusable="false" />
-                              </IconButton>
-                            </div>
+                              <PanelLeft focusable="false" />
+                            </IconButton>
                           </div>
-                          <div className={getLayoutClassName("headerTitle")}>
-                            <Heading rank={2} size="xs">
-                              {headerTitle || rootProps.title || "Page"}
-                              {headerPath && (
-                                <>
-                                  {" "}
-                                  <code
-                                    className={getLayoutClassName("headerPath")}
-                                  >
-                                    {headerPath}
-                                  </code>
-                                </>
-                              )}
-                            </Heading>
-                          </div>
-                          <div className={getLayoutClassName("headerTools")}>
-                            <div className={getLayoutClassName("menuButton")}>
-                              <IconButton
-                                onClick={() => {
-                                  return setMenuOpen(!menuOpen);
-                                }}
-                                title="Toggle menu bar"
-                              >
-                                {menuOpen ? (
-                                  <ChevronUp focusable="false" />
-                                ) : (
-                                  <ChevronDown focusable="false" />
-                                )}
-                              </IconButton>
-                            </div>
-                            <MenuBar
-                              appState={appState}
-                              data={data}
-                              dispatch={dispatch}
-                              onPublish={onPublish}
-                              menuOpen={menuOpen}
-                              renderHeaderActions={() => (
-                                <CustomHeaderActions>
-                                  <Button
-                                    onClick={() => {
-                                      onPublish && onPublish(data);
-                                    }}
-                                    icon={<Globe size="14px" />}
-                                  >
-                                    Publish
-                                  </Button>
-                                </CustomHeaderActions>
-                              )}
-                              setMenuOpen={setMenuOpen}
-                            />
+                          <div
+                            className={getLayoutClassName("rightSideBarToggle")}
+                          >
+                            <IconButton
+                              onClick={() => {
+                                toggleSidebars("right");
+                              }}
+                              title="Toggle right sidebar"
+                            >
+                              <PanelRight focusable="false" />
+                            </IconButton>
                           </div>
                         </div>
-                      </header>
-                    </CustomHeader>
-                    <div className={getLayoutClassName("leftSideBar")}>
-                      <SidebarSection title="Components" noBorderTop>
-                        <Components />
-                      </SidebarSection>
-                      <SidebarSection title="Outline">
-                        <Outline />
-                      </SidebarSection>
-                    </div>
-                    <Canvas />
-                    <div className={getLayoutClassName("rightSideBar")}>
-                      <SidebarSection
-                        noPadding
-                        noBorderTop
-                        showBreadcrumbs
-                        title={selectedItem ? selectedComponentLabel : "Page"}
-                      >
-                        <Fields />
-                      </SidebarSection>
-                    </div>
+                        <div className={getLayoutClassName("headerTitle")}>
+                          <Heading rank={2} size="xs">
+                            {headerTitle || rootProps.title || "Page"}
+                            {headerPath && (
+                              <>
+                                {" "}
+                                <code
+                                  className={getLayoutClassName("headerPath")}
+                                >
+                                  {headerPath}
+                                </code>
+                              </>
+                            )}
+                          </Heading>
+                        </div>
+                        <div className={getLayoutClassName("headerTools")}>
+                          <div className={getLayoutClassName("menuButton")}>
+                            <IconButton
+                              onClick={() => {
+                                return setMenuOpen(!menuOpen);
+                              }}
+                              title="Toggle menu bar"
+                            >
+                              {menuOpen ? (
+                                <ChevronUp focusable="false" />
+                              ) : (
+                                <ChevronDown focusable="false" />
+                              )}
+                            </IconButton>
+                          </div>
+                          <MenuBar
+                            appState={appState}
+                            data={data}
+                            dispatch={dispatch}
+                            onPublish={onPublish}
+                            menuOpen={menuOpen}
+                            renderHeaderActions={() => (
+                              <CustomHeaderActions>
+                                <Button
+                                  onClick={() => {
+                                    onPublish && onPublish(data);
+                                  }}
+                                  icon={<Globe size="14px" />}
+                                >
+                                  Publish
+                                </Button>
+                              </CustomHeaderActions>
+                            )}
+                            setMenuOpen={setMenuOpen}
+                          />
+                        </div>
+                      </div>
+                    </header>
+                  </CustomHeader>
+                  <div className={getLayoutClassName("leftSideBar")}>
+                    <SidebarSection title="Components" noBorderTop>
+                      <Components />
+                    </SidebarSection>
+                    <SidebarSection title="Outline">
+                      <Outline />
+                    </SidebarSection>
+                  </div>
+                  <Canvas />
+                  <div className={getLayoutClassName("rightSideBar")}>
+                    <SidebarSection
+                      noPadding
+                      noBorderTop
+                      showBreadcrumbs
+                      title={selectedItem ? selectedComponentLabel : "Page"}
+                    >
+                      <Fields />
+                    </SidebarSection>
                   </div>
                 </div>
-              )}
-            </CustomPuck>
-          </DropZoneProvider>
-        </DragDropProvider>
+              </div>
+            )}
+          </CustomPuck>
+        </DragDropContext>
       </AppProvider>
       <div id="puck-portal-root" className={getClassName("portal")} />
     </div>
