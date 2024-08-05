@@ -34,7 +34,6 @@ function DropZoneEdit({
     // These all need setting via context
     data,
     config,
-    itemSelector,
     areaId,
     draggedItem,
     placeholderStyle,
@@ -46,6 +45,8 @@ function DropZoneEdit({
     collisionPriority,
     registerLocalZone,
   } = ctx! || {};
+
+  const { itemSelector } = appContext.state.ui;
 
   const isDragging = !!draggedItem;
 
