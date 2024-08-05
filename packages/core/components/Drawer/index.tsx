@@ -1,16 +1,10 @@
 import styles from "./styles.module.css";
 import getClassNameFactory from "../../lib/get-class-name-factory";
 import { DragIcon } from "../DragIcon";
-import {
-  ReactElement,
-  ReactNode,
-  Ref,
-  useCallback,
-  useMemo,
-  useState,
-} from "react";
+import { ReactElement, ReactNode, Ref, useMemo, useState } from "react";
 import { useDraggable } from "@dnd-kit/react";
 import { generateId } from "../../lib/generate-id";
+import { useDragListener } from "../DragDropContext";
 
 const getClassName = getClassNameFactory("Drawer", styles);
 const getClassNameItem = getClassNameFactory("DrawerItem", styles);
@@ -51,6 +45,34 @@ export const DrawerItemInner = ({
   );
 };
 
+/**
+ * Wrap `useDraggable`, remounting it when the `id` changes.
+ *
+ * Could be removed by remounting `useDraggable` upstream in dndkit on `id` changes.
+ */
+const DrawerItemDraggable = ({
+  children,
+  name,
+  label,
+  id,
+}: {
+  children?: (props: { children: ReactNode; name: string }) => ReactElement;
+  name: string;
+  label?: string;
+  id: string;
+}) => {
+  const { ref } = useDraggable({
+    id,
+    data: { type: "drawer", componentType: name },
+  });
+
+  return (
+    <DrawerItemInner name={name} label={label} dragRef={ref}>
+      {children}
+    </DrawerItemInner>
+  );
+};
+
 const DrawerItem = ({
   name,
   children,
@@ -64,22 +86,22 @@ const DrawerItem = ({
   index?: number; // TODO deprecate
 }) => {
   const resolvedId = id || name;
-  // const [dynamicId, setDynamicId] = useState(generateId(resolvedId));
+  const [dynamicId, setDynamicId] = useState(generateId(resolvedId));
 
-  const { ref } = useDraggable({
-    id: resolvedId,
-    data: { type: "drawer", componentType: resolvedId },
-  });
-
-  // // Id changes every time you hover
-  // const onMouseOver = useCallback(() => {
-  //   setDynamicId(generateId(resolvedId));
-  // }, [resolvedId]);
+  useDragListener(
+    "dragend",
+    () => {
+      setDynamicId(generateId(resolvedId));
+    },
+    [resolvedId]
+  );
 
   return (
-    <DrawerItemInner name={name} label={label} dragRef={ref}>
-      {children}
-    </DrawerItemInner>
+    <div key={dynamicId}>
+      <DrawerItemDraggable name={name} label={label} id={dynamicId}>
+        {children}
+      </DrawerItemDraggable>
+    </div>
   );
 };
 

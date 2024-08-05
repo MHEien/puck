@@ -1,14 +1,8 @@
 .Drawer {
+  display: flex;
+  flex-direction: column;
   font-family: var(--puck-font-family);
-}
-
-.DrawerItem-default .DrawerItem-draggableWrapper {
-  /* padding required here to prevent bug when cancelling a drag */
-  padding-bottom: 12px;
-}
-
-.DrawerItem:last-of-type .DrawerItem-default .DrawerItem-draggableWrapper {
-  padding-bottom: 0;
+  gap: 12px;
 }
 
 .DrawerItem-draggable {
