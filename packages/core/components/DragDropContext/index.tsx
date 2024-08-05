@@ -88,24 +88,22 @@ export const DragDropContext = ({ children }: { children: ReactNode }) => {
 
           const item = getItem({ zone, index }, data);
 
-          if (!item) return;
+          if (item?.props.__placeholder) {
+            const propsWithoutPlaceholder = {
+              ...item.props,
+            };
 
-          const propsWithoutPlaceholder = {
-            ...item.props,
-          };
-
-          if (item.props.__placeholder) {
             propsWithoutPlaceholder.id = generateId(item.type);
 
             delete propsWithoutPlaceholder["__placeholder"];
-          }
 
-          dispatch({
-            type: "replace",
-            destinationIndex: source.data.index,
-            destinationZone: source.data.group,
-            data: { ...item, props: propsWithoutPlaceholder },
-          });
+            dispatch({
+              type: "replace",
+              destinationIndex: source.data.index,
+              destinationZone: source.data.group,
+              data: { ...item, props: propsWithoutPlaceholder },
+            });
+          }
 
           dragListeners.dragend?.forEach((fn) => {
             fn(event, manager);
