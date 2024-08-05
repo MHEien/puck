@@ -1,22 +1,3 @@
-// TODO
-// - [x] fix placeholder preview
-// - [ ] fix collisions when dragging out of nested dropzones
-// - [ ] dragging in of new items
-// - [ ] drag handlers when dragging
-// - [x] reintroduce dropzone restrictions
-// - [ ] use data- attribute instead of ref for multi-framework future thinking
-// - [ ] (Clauderic) fix item resizing when dragged out of nested parent
-// - [ ] (Clauderic?) fix infinite loop when dragging out of nested dropzones
-// - [ ] iframe support for dragging
-// - [ ] iframe support for overlays
-// - [x] Can't always scroll whilst dragging
-// - [ ] register path data
-// - [x] Fix some state issues where item is duplicated after dropping between zones
-// - [x] Test multiple root dropzones
-// - [ ] Custom collision detector to mimic over-midpoint dragging?
-// - [ ] Sync on props change to prevent overlay lagging if they change layout (i.e. grid), or remove userIsDragging condition on loop (with negative perf implications, but could also then remove scroll observer)
-// - [ ] Isolate overlay styles to iframe host, if possible
-
 import {
   ReactNode,
   Ref,
