@@ -138,9 +138,9 @@ function DropZoneEdit({
       if (!setHoveringArea || !setHoveringZone) return;
 
       // Eject if this zone isn't droppable for the item
-      console.log(
-        `${zoneCompound} (hover) isDroppableTarget ${isDroppableTarget()}`
-      );
+      // console.log(
+      //   `${zoneCompound} (hover) isDroppableTarget ${isDroppableTarget()}`
+      // );
       if (!isDroppableTarget()) {
         console.log(`${zoneCompound} is not a droppable target`);
 
@@ -218,10 +218,13 @@ function DropZoneEdit({
   const isDropEnabled = isEnabled && content.length === 0;
 
   const { ref: dropRef } = useDroppable({
-    id: `zone:${zoneCompound}`,
+    id: zoneCompound,
     collisionPriority: isEnabled ? collisionPriority : 0,
     disabled: !isDropEnabled,
     collisionDetector: pointerIntersection,
+    data: {
+      zone: true,
+    },
   });
 
   const selectedItem = itemSelector ? getItem(itemSelector, data) : null;

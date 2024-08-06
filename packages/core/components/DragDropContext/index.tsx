@@ -6,6 +6,7 @@ import {
   Dispatch,
   ReactNode,
   SetStateAction,
+  useCallback,
   useContext,
   useEffect,
   useState,
@@ -14,7 +15,9 @@ import { DragDropManager, Feedback } from "@dnd-kit/dom";
 import { DragDropEvents } from "@dnd-kit/abstract";
 import { DropZoneProvider } from "../DropZone";
 import type { Draggable, Droppable } from "@dnd-kit/dom";
-import { getItem } from "../../lib/get-item";
+import { getItem, ItemSelector } from "../../lib/get-item";
+import { PathData } from "../DropZone/context";
+import { getZoneId } from "../../lib/get-zone-id";
 
 type Events = DragDropEvents<Draggable, Droppable, DragDropManager>;
 type DragCbs = Partial<{ [eventName in keyof Events]: Events[eventName][] }>;
@@ -53,6 +56,36 @@ export const DragDropContext = ({ children }: { children: ReactNode }) => {
   const [draggedItem, setDraggedItem] = useState<Draggable | null>();
 
   const [dragListeners, setDragListeners] = useState<DragCbs>({});
+
+  const [pathData, setPathData] = useState<PathData>();
+
+  const registerPath = useCallback(
+    (selector: ItemSelector) => {
+      const item = getItem(selector, data);
+
+      if (!item) {
+        return;
+      }
+
+      const [area] = getZoneId(selector.zone);
+
+      setPathData((latestPathData = {}) => {
+        const parentPathData = latestPathData[area] || { path: [] };
+
+        return {
+          ...latestPathData,
+          [item.props.id]: {
+            path: [
+              ...parentPathData.path,
+              ...(selector.zone ? [selector.zone] : []),
+            ],
+            label: item.type as string,
+          },
+        };
+      });
+    },
+    [data, setPathData]
+  );
 
   return (
     <dragListenerContext.Provider
@@ -123,7 +156,7 @@ export const DragDropContext = ({ children }: { children: ReactNode }) => {
           console.log("onDragOver", source, target);
 
           const isNewComponent = source.data.type === "drawer";
-          const isOverZone = target.id.toString().indexOf("zone:") === 0;
+          const isOverZone = target.data.zone;
 
           let targetZone = target.data.group;
           let targetIndex = target.data.index;
@@ -131,6 +164,20 @@ export const DragDropContext = ({ children }: { children: ReactNode }) => {
           if (isOverZone) {
             targetZone = target.id.toString().replace("zone:", "");
             targetIndex = 0; // TODO place at end
+          }
+
+          const [sourceId] = (source.id as string).split(":");
+          const [targetId] = (target.id as string).split(":");
+
+          // Abort if dragging over self or descendant
+          if (
+            targetId === sourceId ||
+            pathData?.[target.id]?.path.find((path) => {
+              const [pathId] = (path as string).split(":");
+              return pathId === sourceId;
+            })
+          ) {
+            return;
           }
 
           if (isNewComponent) {
@@ -195,6 +242,8 @@ export const DragDropContext = ({ children }: { children: ReactNode }) => {
             mode: "edit",
             areaId: "root",
             collisionPriority: 1,
+            registerPath,
+            pathData,
           }}
         >
           {children}

@@ -118,40 +118,6 @@ export const DropZoneProvider = ({
     [setActiveZones, dispatch]
   );
 
-  const [pathData, setPathData] = useState<PathData>();
-
-  const registerPath = useCallback(
-    (selector: ItemSelector) => {
-      if (!value?.data) {
-        return;
-      }
-
-      const item = getItem(selector, value.data);
-
-      if (!item) {
-        return;
-      }
-
-      const [area] = getZoneId(selector.zone);
-
-      setPathData((latestPathData = {}) => {
-        const parentPathData = latestPathData[area] || { path: [] };
-
-        return {
-          ...latestPathData,
-          [item.props.id]: {
-            path: [
-              ...parentPathData.path,
-              ...(selector.zone ? [selector.zone] : []),
-            ],
-            label: item.type as string,
-          },
-        };
-      });
-    },
-    [value, setPathData]
-  );
-
   const [zoneWillDrag, setZoneWillDrag] = useState("");
 
   return (
@@ -170,8 +136,6 @@ export const DropZoneProvider = ({
             registerZone,
             unregisterZone,
             activeZones,
-            registerPath,
-            pathData,
             zoneWillDrag,
             setZoneWillDrag,
             ...value,

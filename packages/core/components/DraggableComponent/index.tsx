@@ -198,14 +198,14 @@ export const DraggableComponent = ({
 
       // console.log(`${id} lives in a droppable target`);
 
-      console.log(
-        "cp",
-        e.currentTarget,
-        e.target,
-        id,
-        zoneCompound,
-        localZones
-      );
+      // console.log(
+      //   "cp",
+      //   e.currentTarget,
+      //   e.target,
+      //   id,
+      //   zoneCompound,
+      //   localZones
+      // );
 
       e.stopPropagation();
 
