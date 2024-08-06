@@ -132,6 +132,13 @@ export const DraggableComponent = ({
     }
   }, [ref, overlayRef]);
 
+  useEffect(() => {
+    ctx?.registerPath!({
+      index,
+      zone: zoneCompound,
+    });
+  }, []);
+
   const onClick = useCallback(
     (e: SyntheticEvent | Event) => {
       e.stopPropagation();
