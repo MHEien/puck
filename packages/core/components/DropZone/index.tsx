@@ -295,7 +295,9 @@ function DropZoneEdit({
               </div>
             );
 
-        if (item.props.__placeholder) {
+        const isPlaceholder = item.props.__placeholder;
+
+        if (isPlaceholder) {
           // eslint-disable-next-line react/display-name
           Render = () => <DrawerItemInner name={item.type as string} />;
         }
@@ -320,7 +322,7 @@ function DropZoneEdit({
             isEnabled={isEnabled}
           >
             {(dragRef) =>
-              componentConfig.inline ? (
+              componentConfig.inline && !isPlaceholder ? (
                 <Render
                   {...defaultedProps}
                   puck={{
