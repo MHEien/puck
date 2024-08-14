@@ -30,7 +30,11 @@ export const DrawerItemInner = ({
   );
 
   return (
-    <div className={getClassNameItem()} ref={dragRef}>
+    <div
+      className={getClassNameItem()}
+      ref={dragRef}
+      onMouseDown={(e) => e.preventDefault()}
+    >
       <CustomInner name={name}>
         <div className={getClassNameItem("draggableWrapper")}>
           <div className={getClassNameItem("draggable")}>
