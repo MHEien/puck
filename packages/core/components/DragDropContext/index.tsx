@@ -132,11 +132,18 @@ export const DragDropContext = ({ children }: { children: ReactNode }) => {
 
             dispatch({
               type: "replace",
-              destinationIndex: source.data.index,
-              destinationZone: source.data.group,
+              destinationIndex: index,
+              destinationZone: zone,
               data: { ...item, props: propsWithoutPlaceholder },
             });
           }
+
+          setTimeout(() => {
+            dispatch({
+              type: "setUi",
+              ui: { itemSelector: { index, zone } },
+            });
+          }, 250);
 
           dragListeners.dragend?.forEach((fn) => {
             fn(event, manager);
