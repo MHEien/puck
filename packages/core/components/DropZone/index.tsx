@@ -207,8 +207,7 @@ function DropZoneEdit({
   let isEnabled = true;
 
   if (draggedItem) {
-    isEnabled = hoveringOverArea;
-    // isEnabled = hoveringOverArea && hoveringOverZone;
+    isEnabled = hoveringOverArea && hoveringOverZone;
   }
 
   if (isEnabled) {
