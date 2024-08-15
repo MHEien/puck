@@ -149,7 +149,7 @@ function DropZoneEdit({
         return;
       }
 
-      e.stopPropagation();
+      // e.stopPropagation();
 
       // console.log("dz", e.currentTarget, e.target, areaId, zoneCompound);
 
@@ -315,7 +315,6 @@ function DropZoneEdit({
             zoneCompound={zoneCompound}
             collisionPriority={collisionPriority + 1}
             index={i}
-            isDroppableTarget={isDroppableTarget}
             isLoading={appContext.componentState[componentId]?.loading}
             isSelected={isSelected}
             label={label}

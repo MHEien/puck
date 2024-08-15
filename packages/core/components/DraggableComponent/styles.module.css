@@ -56,10 +56,6 @@
   background: var(--overlay-background);
 }
 
-.DraggableComponent--forceHover > .DraggableComponent-overlay {
-  background: var(--overlay-background);
-}
-
 .DraggableComponent--hover:not(.DraggableComponent--isSelected)
   > .DraggableComponent-overlay {
   outline: 2px var(--puck-color-azure-09) solid !important;

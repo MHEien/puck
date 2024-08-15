@@ -34,7 +34,6 @@ export const DraggableComponent = ({
   id,
   index,
   zoneCompound,
-  isDroppableTarget,
   isLoading = false,
   isSelected = false,
   debug,
@@ -49,7 +48,6 @@ export const DraggableComponent = ({
   index: number;
   zoneCompound: string;
   isSelected?: boolean;
-  isDroppableTarget: () => boolean;
   debug?: string;
   label?: string;
   isLoading: boolean;
@@ -179,47 +177,27 @@ export const DraggableComponent = ({
   const [hover, setHover] = useState(false);
 
   useEffect(() => {
-    if (!ref.current) return;
+    if (!ref.current) {
+      return;
+    }
+
     const el = ref.current as HTMLElement;
 
     const _onMouseOver = (e: Event) => {
-      const parentIsDroppableTarget = isDroppableTarget();
-
-      // User is dragging, but not this item
-      if (userIsDragging && !isDragging) return;
-
-      // TODO conflict between this rule, and area restrictions (when hovering over area and not dropzone)
-      // TODO what you really need to check is whether children are droppable
-      // TODO and they are droppable, then you skip this
-      // if (parentIsDroppableTarget) {
-      //   console.log(`Enabling parent of ${id} to capture drop`);
-      //   return;
-      // }
-
-      // console.log(`${id} lives in a droppable target`);
-
-      // console.log(
-      //   "cp",
-      //   e.currentTarget,
-      //   e.target,
-      //   id,
-      //   zoneCompound,
-      //   localZones
-      // );
+      if (userIsDragging) {
+        // User is dragging, and dragging this item
+        if (isDragging) {
+          setHover(true);
+        } else {
+          setHover(false);
+        }
+      } else {
+        setHover(true);
+      }
 
       e.stopPropagation();
 
-      setHover(true);
-
-      if (containsActiveZone) {
-        if (ctx?.setHoveringArea) {
-          ctx.setHoveringArea(id);
-        }
-
-        // if (ctx?.registerZone) {
-        //   ctx?.registerZone(zoneCompound);
-        // }
-      } else {
+      if (!containsActiveZone) {
         if (ctx?.setHoveringArea) {
           ctx.setHoveringArea(ctx.areaId || "");
         }
@@ -341,15 +319,6 @@ export const DraggableComponent = ({
               hover: hover || indicativeHover,
             })}
             ref={overlayRef}
-            // onMouseOver={(e) => {
-            //   e.stopPropagation();
-            //   setHover(true);
-            // }}
-            // onMouseOut={(e) => {
-            //   e.stopPropagation();
-            //   setHover(false);
-            // }}
-            // onClick={onClick}
           >
             {debug}
             {isLoading && (
