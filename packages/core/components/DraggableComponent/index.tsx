@@ -54,7 +54,7 @@ export const DraggableComponent = ({
   isEnabled?: boolean;
   indicativeHover?: boolean;
 }) => {
-  const { zoomConfig, dispatch, iframe } = useAppContext();
+  const { zoomConfig, dispatch, iframe, state } = useAppContext();
   const isModifierHeld = useModifierHeld("Alt");
   const ctx = useContext(dropZoneContext);
 
@@ -237,6 +237,7 @@ export const DraggableComponent = ({
   ]);
 
   useEffect(sync, [ref]);
+  useEffect(sync, [state.data]);
 
   const isVisible = isSelected || hover || indicativeHover || isDragging;
 
