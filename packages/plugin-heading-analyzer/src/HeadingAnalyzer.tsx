@@ -114,7 +114,7 @@ export const HeadingAnalyzer = () => {
     } else {
       setHierarchy(buildHierarchy(frame));
     }
-  }, [appState.data]);
+  }, [appState.data, appState.ui.isDragging]);
 
   return (
     <div className={getClassName()}>

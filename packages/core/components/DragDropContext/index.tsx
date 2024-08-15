@@ -141,9 +141,9 @@ export const DragDropContext = ({ children }: { children: ReactNode }) => {
           setTimeout(() => {
             dispatch({
               type: "setUi",
-              ui: { itemSelector: { index, zone } },
+              ui: { itemSelector: { index, zone }, isDragging: false },
             });
-          }, 250);
+          }, 300);
 
           dragListeners.dragend?.forEach((fn) => {
             fn(event, manager);
@@ -225,6 +225,11 @@ export const DragDropContext = ({ children }: { children: ReactNode }) => {
               recordHistory: false,
             });
           }
+
+          dispatch({
+            type: "setUi",
+            ui: { isDragging: true },
+          });
 
           dragListeners.dragover?.forEach((fn) => {
             fn(event, manager);
