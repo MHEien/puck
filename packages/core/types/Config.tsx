@@ -4,6 +4,7 @@ import { DropZoneProps } from "../components/DropZone/types";
 import { Viewport } from "./Viewports";
 import { Fields } from "./Fields";
 import { RefOrValue } from "@dnd-kit/react/utilities";
+import { PuckAction } from "../reducer";
 
 type WithPuckProps<Props> = Props & {
   id: string;

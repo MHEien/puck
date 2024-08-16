@@ -1,5 +1,4 @@
 import { DragDropProvider } from "@dnd-kit/react";
-import { generateId } from "../../lib/generate-id";
 import { useAppContext } from "../Puck/context";
 import {
   createContext,
@@ -49,8 +48,8 @@ export function useDragListener(
 }
 
 export const DragDropContext = ({ children }: { children: ReactNode }) => {
-  const { state, config, dispatch } = useAppContext();
-  const { data } = state;
+  const { state, config, dispatch, deferred } = useAppContext();
+  const { data } = deferred?.isDeferred ? deferred.state || state : state;
   const [manager] = useState(new DragDropManager({ plugins: [Feedback] }));
 
   const [draggedItem, setDraggedItem] = useState<Draggable | null>();
@@ -107,41 +106,18 @@ export const DragDropContext = ({ children }: { children: ReactNode }) => {
 
           console.log("onDragEnd", source, target);
 
-          const isOverZone = target.id.toString().indexOf("zone:") === 0;
-
           let zone = source.data.group;
           let index = source.data.index;
 
-          if (isOverZone) {
-            zone = target.id.toString().replace("zone:", "");
-            index = 0; // TODO place at end
-          }
-
-          // Remove placeholder prop from component and sync to history
-
-          const item = getItem({ zone, index }, data);
-
-          if (item?.props.__placeholder) {
-            const propsWithoutPlaceholder = {
-              ...item.props,
-            };
-
-            propsWithoutPlaceholder.id = generateId(item.type);
-
-            delete propsWithoutPlaceholder["__placeholder"];
-
-            dispatch({
-              type: "replace",
-              destinationIndex: index,
-              destinationZone: zone,
-              data: { ...item, props: propsWithoutPlaceholder },
-            });
-          }
-
           setTimeout(() => {
+            deferred?.commit();
+
             dispatch({
               type: "setUi",
-              ui: { itemSelector: { index, zone }, isDragging: false },
+              ui: {
+                itemSelector: { index, zone },
+                isDragging: false,
+              },
             });
           }, 300);
 
@@ -160,16 +136,17 @@ export const DragDropContext = ({ children }: { children: ReactNode }) => {
 
           if (!target || !source) return;
 
-          console.log("onDragOver", source, target);
+          const sourceData = source.data;
+          const targetData = target.data;
 
-          const isNewComponent = source.data.type === "drawer";
-          const isOverZone = target.data.zone;
+          const isNewComponent = sourceData.type === "drawer";
+          const isOverZone = targetData.zone;
 
-          let targetZone = target.data.group;
-          let targetIndex = target.data.index;
+          let targetZone = targetData.group;
+          let targetIndex = targetData.index;
 
           if (isOverZone) {
-            targetZone = target.id.toString().replace("zone:", "");
+            targetZone = target.id.toString();
             targetIndex = 0; // TODO place at end
           }
 
@@ -188,12 +165,11 @@ export const DragDropContext = ({ children }: { children: ReactNode }) => {
           }
 
           if (isNewComponent) {
-            dispatch({
+            deferred?.dispatch({
               type: "insert",
-              componentType: source.data.componentType,
+              componentType: sourceData.componentType,
               destinationIndex: targetIndex,
               destinationZone: targetZone,
-              recordHistory: false,
               props: {
                 id: source.id.toString(),
                 __placeholder: true,
@@ -207,29 +183,15 @@ export const DragDropContext = ({ children }: { children: ReactNode }) => {
             //   id: source.id.toString(),
             //   recordHistory: false,
             // });
-          } else if (source.data.group === targetZone) {
-            dispatch({
-              type: "reorder",
-              sourceIndex: source.data.index,
-              destinationIndex: targetIndex,
-              destinationZone: targetZone,
-              recordHistory: false,
-            });
           } else {
-            dispatch({
+            deferred?.dispatch({
               type: "move",
-              sourceZone: source.data.group,
-              sourceIndex: source.data.index,
+              sourceZone: sourceData.group,
+              sourceIndex: sourceData.index,
               destinationIndex: targetIndex,
               destinationZone: targetZone,
-              recordHistory: false,
             });
           }
-
-          dispatch({
-            type: "setUi",
-            ui: { isDragging: true },
-          });
 
           dragListeners.dragover?.forEach((fn) => {
             fn(event, manager);
@@ -238,7 +200,12 @@ export const DragDropContext = ({ children }: { children: ReactNode }) => {
         onBeforeDragStart={(event) => {
           setDraggedItem(event.operation.source);
 
-          dispatch({ type: "setUi", ui: { itemSelector: null } });
+          dispatch({
+            type: "setUi",
+            ui: { itemSelector: null, isDragging: true },
+          });
+
+          deferred?.start();
 
           dragListeners.beforedragstart?.forEach((fn) => {
             fn(event, manager);

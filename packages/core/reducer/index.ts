@@ -1,7 +1,7 @@
 import { Reducer } from "react";
 import { AppState, Config } from "../types/Config";
 import { reduceData } from "./data";
-import { PuckAction, SetAction } from "./actions";
+import { CommitAction, PuckAction, SetAction } from "./actions";
 import { reduceUi } from "./state";
 
 export * from "./actions";
@@ -9,13 +9,16 @@ export * from "./data";
 
 export type ActionType = "insert" | "reorder";
 
-export type StateReducer = Reducer<AppState, PuckAction>;
+export type StateReducer<SupportedAction = PuckAction> = Reducer<
+  AppState,
+  SupportedAction
+>;
 
-const storeInterceptor = (
-  reducer: StateReducer,
+function storeInterceptor<SupportedAction extends PuckAction = PuckAction>(
+  reducer: StateReducer<SupportedAction>,
   record?: (appState: AppState) => void
-) => {
-  return (state: AppState, action: PuckAction) => {
+) {
+  return (state: AppState, action: SupportedAction) => {
     const newAppState = reducer(state, action);
 
     const isValidType = ![
@@ -36,7 +39,7 @@ const storeInterceptor = (
 
     return newAppState;
   };
-};
+}
 
 export const setAction = (state: AppState, action: SetAction) => {
   if (typeof action.state === "object") {
@@ -49,24 +52,29 @@ export const setAction = (state: AppState, action: SetAction) => {
   return { ...state, ...action.state(state) };
 };
 
-export function createReducer<UserConfig extends Config = Config>({
+export function createReducer<
+  UserConfig extends Config = Config,
+  SupportedAction extends PuckAction = PuckAction
+>({
   config,
   record,
 }: {
   config: UserConfig;
   record?: (appState: AppState) => void;
-}): StateReducer {
-  return storeInterceptor((state, action) => {
-    const data = reduceData(state.data, action, config);
-    const ui = reduceUi(state.ui, action);
+}): StateReducer<SupportedAction> {
+  return storeInterceptor<SupportedAction>((state, action) => {
+    const currentState = state;
+
+    let newState = {
+      data: reduceData(currentState.data, action, config),
+      ui: reduceUi(currentState.ui, action),
+    };
 
     if (action.type === "set") {
-      return setAction(state, action);
+      newState = setAction(currentState, action);
     }
 
-    const newState = { data, ui };
-
-    // console.log(action, state, newState);
+    console.log(action, state, newState);
 
     return newState;
   }, record);

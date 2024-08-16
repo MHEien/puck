@@ -54,6 +54,7 @@ import { setupZone } from "../../lib/setup-zone";
 import { rootDroppableId } from "../../lib/root-droppable-id";
 import { generateId } from "../../lib/generate-id";
 import { useInjectGlobalCss } from "../../lib/use-inject-css";
+import { useDeferred } from "../../lib/use-deferred";
 
 const getClassName = getClassNameFactory("Puck", styles);
 const getLayoutClassName = getClassNameFactory("PuckLayout", styles);
@@ -387,12 +388,15 @@ export function Puck<UserConfig extends Config = Config>({
 
   const [manager] = useState(new DragDropManager({ plugins: [Feedback] }));
 
+  const deferred = useDeferred(appState, config, dispatch);
+
   return (
     <div className={`Puck ${getClassName()}`}>
       <AppProvider
         value={{
           state: appState,
           dispatch,
+          deferred,
           config,
           componentState,
           resolveData,

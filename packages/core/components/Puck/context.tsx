@@ -11,6 +11,7 @@ import { getItem } from "../../lib/get-item";
 import { Plugin } from "../../types/Plugin";
 import { Overrides } from "../../types/Overrides";
 import { PuckHistory } from "../../lib/use-puck-history";
+import { useDeferred } from "../../lib/use-deferred";
 import { defaultViewports } from "../ViewportControls/default-viewports";
 import { Viewports } from "../../types/Viewports";
 import { IframeConfig } from "../../types/IframeConfig";
@@ -47,6 +48,7 @@ type ZoomConfig = {
 type AppContext<UserConfig extends Config = Config> = {
   state: AppState;
   dispatch: (action: PuckAction) => void;
+  deferred?: ReturnType<typeof useDeferred>;
   config: UserConfig;
   componentState: Record<string, { loading: boolean }>;
   resolveData: (newAppState: AppState) => void;

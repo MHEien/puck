@@ -11,7 +11,7 @@ import {
   removeRelatedZones,
 } from "../lib/reduce-related-zones";
 import { generateId } from "../lib/generate-id";
-import { PuckAction, ReplaceAction } from "./actions";
+import { PuckAction, ReorderAction, ReplaceAction } from "./actions";
 
 // Restore unregistered zones when re-registering in same session
 export const zoneCache = {};
@@ -38,6 +38,33 @@ export const replaceAction = (data: Data, action: ReplaceAction) => {
         newData.zones[action.destinationZone],
         action.destinationIndex,
         action.data
+      ),
+    },
+  };
+};
+
+const reorderAction = (data: Data, action: ReorderAction) => {
+  if (action.destinationZone === rootDroppableId) {
+    return {
+      ...data,
+      content: reorder(
+        data.content,
+        action.sourceIndex,
+        action.destinationIndex
+      ),
+    };
+  }
+
+  const newData = setupZone(data, action.destinationZone);
+
+  return {
+    ...data,
+    zones: {
+      ...newData.zones,
+      [action.destinationZone]: reorder(
+        newData.zones[action.destinationZone],
+        action.sourceIndex,
+        action.destinationIndex
       ),
     },
   };
@@ -156,30 +183,7 @@ export const reduceData = (data: Data, action: PuckAction, config: Config) => {
   }
 
   if (action.type === "reorder") {
-    if (action.destinationZone === rootDroppableId) {
-      return {
-        ...data,
-        content: reorder(
-          data.content,
-          action.sourceIndex,
-          action.destinationIndex
-        ),
-      };
-    }
-
-    const newData = setupZone(data, action.destinationZone);
-
-    return {
-      ...data,
-      zones: {
-        ...newData.zones,
-        [action.destinationZone]: reorder(
-          newData.zones[action.destinationZone],
-          action.sourceIndex,
-          action.destinationIndex
-        ),
-      },
-    };
+    return reorderAction(data, action);
   }
 
   if (action.type === "move") {
@@ -192,6 +196,10 @@ export const reduceData = (data: Data, action: PuckAction, config: Config) => {
       { zone: action.sourceZone, index: action.sourceIndex },
       newData
     );
+
+    if (action.sourceZone === action.destinationZone) {
+      return reorderAction(data, { ...action, type: "reorder" });
+    }
 
     if (action.sourceZone === rootDroppableId) {
       return {
