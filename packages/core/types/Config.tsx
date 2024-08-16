@@ -173,6 +173,12 @@ export type UiState = {
     controlsVisible: boolean;
     options: Viewport[];
   };
+  preview: {
+    componentType: string;
+    zone: string;
+    index: number;
+    id: string;
+  } | null;
 };
 
 export type AppState = { data: Data; ui: UiState };

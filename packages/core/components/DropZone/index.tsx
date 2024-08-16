@@ -14,6 +14,7 @@ import { ComponentConfig, PuckContext } from "../../types/Config";
 import { useDroppable } from "@dnd-kit/react";
 import { DrawerItemInner } from "../Drawer";
 import { pointerIntersection } from "@dnd-kit/collision";
+import { insert } from "../../lib/insert";
 
 const getClassName = getClassNameFactory("DropZone", styles);
 
@@ -229,6 +230,16 @@ function DropZoneEdit({
   const selectedItem = itemSelector ? getItem(itemSelector, data) : null;
   const isAreaSelected = selectedItem && areaId === selectedItem.props.id;
 
+  const { preview } = appContext.state.ui;
+
+  const contentWithPreview =
+    preview?.zone === zoneCompound
+      ? insert(content, preview.index, {
+          type: "preview",
+          props: { id: preview.id },
+        })
+      : content;
+
   return (
     <div
       className={`${getClassName({
@@ -252,19 +263,7 @@ function DropZoneEdit({
       }}
       style={style}
     >
-      {/* <p>
-        hoveringZone: {JSON.stringify(hoveringZone)} (
-        {JSON.stringify(zoneCompound)})
-      </p>
-      <p>
-        hoveringArea: {JSON.stringify(hoveringArea)} ({JSON.stringify(areaId)})
-      </p>
-      <p>hoveringOverArea: {JSON.stringify(hoveringOverArea)}</p>
-      <p>isEnabled: {JSON.stringify(isEnabled)}</p>
-      <p>collisionPriority: {JSON.stringify(collisionPriority)}</p>
-      <p>draggedItem: {JSON.stringify(!!draggedItem)}</p>
-      <p>isDroppableTarget(): {JSON.stringify(isDroppableTarget())}</p> */}
-      {content.map((item, i) => {
+      {contentWithPreview.map((item, i) => {
         const componentId = item.props.id;
 
         const puckProps: PuckContext = {
@@ -294,23 +293,27 @@ function DropZoneEdit({
               </div>
             );
 
-        const isPlaceholder = item.props.__placeholder;
-
-        if (isPlaceholder) {
-          // eslint-disable-next-line react/display-name
-          Render = () => <DrawerItemInner name={item.type as string} />;
-        }
-
         const componentConfig: ComponentConfig | undefined =
           config.components[item.type];
 
-        const label = componentConfig?.["label"] ?? item.type.toString();
+        let componentType = item.type;
+
+        let label = componentConfig?.["label"] ?? item.type.toString();
+
+        if (item.type === "preview") {
+          componentType = preview!.componentType;
+
+          label =
+            config.components[componentType]?.label ?? preview!.componentType;
+
+          Render = () => <DrawerItemInner name={label} />;
+        }
 
         return (
           <DraggableComponent
             key={componentId}
             id={componentId}
-            componentType={item.type as string}
+            componentType={componentType}
             zoneCompound={zoneCompound}
             collisionPriority={collisionPriority + 1}
             index={i}
@@ -320,7 +323,7 @@ function DropZoneEdit({
             isEnabled={isEnabled}
           >
             {(dragRef) =>
-              componentConfig.inline && !isPlaceholder ? (
+              componentConfig?.inline ? (
                 <Render
                   {...defaultedProps}
                   puck={{

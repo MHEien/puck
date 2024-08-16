@@ -58,6 +58,8 @@ export const DragDropContext = ({ children }: { children: ReactNode }) => {
 
   const [pathData, setPathData] = useState<PathData>();
 
+  const [dragMode, setDragMode] = useState<"new" | "existing" | null>(null);
+
   const registerPath = useCallback(
     (selector: ItemSelector) => {
       const item = getItem(selector, data);
@@ -110,13 +112,21 @@ export const DragDropContext = ({ children }: { children: ReactNode }) => {
           let index = source.data.index;
 
           setTimeout(() => {
-            deferred?.commit();
+            if (state.ui.preview) {
+              dispatch({
+                type: "insert",
+                componentType: state.ui.preview.componentType,
+                destinationIndex: state.ui.preview.index,
+                destinationZone: state.ui.preview.zone,
+              });
+            }
 
             dispatch({
               type: "setUi",
               ui: {
                 itemSelector: { index, zone },
                 isDragging: false,
+                preview: null,
               },
             });
           }, 300);
@@ -139,7 +149,6 @@ export const DragDropContext = ({ children }: { children: ReactNode }) => {
           const sourceData = source.data;
           const targetData = target.data;
 
-          const isNewComponent = sourceData.type === "drawer";
           const isOverZone = targetData.zone;
 
           let targetZone = targetData.group;
@@ -164,27 +173,20 @@ export const DragDropContext = ({ children }: { children: ReactNode }) => {
             return;
           }
 
-          if (isNewComponent) {
-            deferred?.dispatch({
-              type: "insert",
-              componentType: sourceData.componentType,
-              destinationIndex: targetIndex,
-              destinationZone: targetZone,
-              props: {
-                id: source.id.toString(),
-                __placeholder: true,
+          if (dragMode === "new") {
+            dispatch({
+              type: "setUi",
+              ui: {
+                preview: {
+                  componentType: sourceData.componentType,
+                  index: targetIndex,
+                  zone: targetZone,
+                  id: source.id.toString(),
+                },
               },
             });
-            // dispatch({
-            //   type: "insert",
-            //   componentType: source.id.toString(),
-            //   destinationIndex: targetIndex,
-            //   destinationZone: targetZone,
-            //   id: source.id.toString(),
-            //   recordHistory: false,
-            // });
           } else {
-            deferred?.dispatch({
+            dispatch({
               type: "move",
               sourceZone: sourceData.group,
               sourceIndex: sourceData.index,
@@ -200,12 +202,14 @@ export const DragDropContext = ({ children }: { children: ReactNode }) => {
         onBeforeDragStart={(event) => {
           setDraggedItem(event.operation.source);
 
+          const isNewComponent = event.operation.source?.data.type === "drawer";
+
+          setDragMode(isNewComponent ? "new" : "existing");
+
           dispatch({
             type: "setUi",
             ui: { itemSelector: null, isDragging: true },
           });
-
-          deferred?.start();
 
           dragListeners.beforedragstart?.forEach((fn) => {
             fn(event, manager);

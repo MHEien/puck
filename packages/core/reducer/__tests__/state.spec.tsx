@@ -1,5 +1,5 @@
 import { defaultAppState } from "../../components/Puck/context";
-import { SetUiAction, createReducer } from "../../reducer";
+import { PreviewAction, SetUiAction, createReducer } from "../../reducer";
 import { AppState, Config } from "../../types/Config";
 
 type Props = {

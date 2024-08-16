@@ -81,47 +81,6 @@ describe("Data reducer", () => {
     });
   });
 
-  describe("preview action", () => {
-    it("should insert placeholder into rootDroppableId", () => {
-      const state: AppState = { ui: defaultUi, data: { ...defaultData } };
-
-      const action: PreviewAction = {
-        type: "preview",
-        componentType: "Comp",
-        destinationIndex: 0,
-        destinationZone: rootDroppableId,
-      };
-
-      const newState = reducer(state, action);
-      expect(newState.data.content[0]).toHaveProperty("type", "__placeholder");
-      expect(newState.data.content[0].props).toHaveProperty(
-        "componentType",
-        "Comp"
-      );
-    });
-
-    it("should insert into a different zone", () => {
-      const state: AppState = { ui: defaultUi, data: { ...defaultData } };
-      const action: PreviewAction = {
-        type: "preview",
-        componentType: "Comp",
-        destinationIndex: 0,
-        destinationZone: "zone1",
-      };
-
-      const newState = reducer(state, action);
-      expect(newState.data.zones?.zone1[0]).toHaveProperty(
-        "type",
-        "__placeholder"
-      );
-
-      expect(newState.data.zones?.zone1[0].props).toHaveProperty(
-        "componentType",
-        "Comp"
-      );
-    });
-  });
-
   describe("reorder action", () => {
     it("should reorder within rootDroppableId", () => {
       const state: AppState = {

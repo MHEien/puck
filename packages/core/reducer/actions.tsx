@@ -8,13 +8,6 @@ export type InsertAction = {
   props?: object;
 };
 
-export type PreviewAction = {
-  type: "preview";
-  componentType: string;
-  destinationIndex: number;
-  destinationZone: string;
-};
-
 export type DuplicateAction = {
   type: "duplicate";
   sourceIndex: number;
@@ -77,7 +70,6 @@ export type UnregisterZoneAction = {
 export type PuckAction = { recordHistory?: boolean } & (
   | ReorderAction
   | InsertAction
-  | PreviewAction
   | MoveAction
   | ReplaceAction
   | RemoveAction

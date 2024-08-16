@@ -1,7 +1,7 @@
 import { Reducer } from "react";
 import { AppState, Config } from "../types/Config";
 import { reduceData } from "./data";
-import { CommitAction, PuckAction, SetAction } from "./actions";
+import { PuckAction, SetAction } from "./actions";
 import { reduceUi } from "./state";
 
 export * from "./actions";

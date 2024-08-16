@@ -21,6 +21,8 @@ type SupportedAction = SetAction | InsertAction | MoveAction;
  *
  * This prevents appState changes during the dragging phase
  *
+ * TODO remove this if not used
+ *
  * @param appState
  * @param config
  * @param dispatch

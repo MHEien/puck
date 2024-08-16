@@ -34,6 +34,7 @@ export const defaultAppState: AppState = {
       options: [],
       controlsVisible: true,
     },
+    preview: null,
   },
 };
 

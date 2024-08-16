@@ -105,6 +105,8 @@ export const HeadingAnalyzer = () => {
 
     if (!frame) return;
 
+    if (appState.ui.isDragging) return;
+
     // We need to delay to allow remainder of page to render first
     if (firstRender) {
       setTimeout(() => {
