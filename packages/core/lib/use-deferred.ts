@@ -12,8 +12,6 @@ import { mergeActions } from "./merge-actions";
  *
  * This prevents appState changes during the dragging phase
  *
- * TODO remove this if not used
- *
  * @param appState
  * @param config
  * @param dispatch

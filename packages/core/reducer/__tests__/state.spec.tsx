@@ -1,5 +1,5 @@
 import { defaultAppState } from "../../components/Puck/context";
-import { SetUiAction, createReducer } from "../../reducer";
+import { InsertAction, SetUiAction, createReducer } from "../../reducer";
 import { AppState, Config } from "../../types/Config";
 
 describe("State reducer", () => {
@@ -25,6 +25,22 @@ describe("State reducer", () => {
 
       const newState = reducer(state, action);
       expect(newState.ui.leftSideBarVisible).toEqual(false);
+    });
+  });
+
+  describe("insert action", () => {
+    it("should clear preview", () => {
+      const state: AppState = defaultAppState;
+
+      const action: InsertAction = {
+        type: "insert",
+        destinationIndex: 0,
+        destinationZone: "my-zone",
+        componentType: "Comp",
+      };
+
+      const newState = reducer(state, action);
+      expect(newState.ui.preview).toBeNull();
     });
   });
 });

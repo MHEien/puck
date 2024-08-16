@@ -16,5 +16,12 @@ export const reduceUi = (ui: UiState, action: PuckAction) => {
     };
   }
 
+  if (action.type === "insert") {
+    return {
+      ...ui,
+      preview: null,
+    };
+  }
+
   return ui;
 };

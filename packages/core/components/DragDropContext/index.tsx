@@ -48,8 +48,8 @@ export function useDragListener(
 }
 
 export const DragDropContext = ({ children }: { children: ReactNode }) => {
-  const { state, config, dispatch } = useAppContext();
-  const { data } = state;
+  const { state, config, deferred, dispatch } = useAppContext();
+  const { data } = deferred?.isDeferred ? deferred.state : state;
   const [manager] = useState(new DragDropManager({ plugins: [Feedback] }));
 
   const [draggedItem, setDraggedItem] = useState<Draggable | null>();
@@ -121,6 +121,8 @@ export const DragDropContext = ({ children }: { children: ReactNode }) => {
               });
             }
 
+            deferred?.commit();
+
             dispatch({
               type: "setUi",
               ui: {
@@ -128,6 +130,7 @@ export const DragDropContext = ({ children }: { children: ReactNode }) => {
                 isDragging: false,
                 preview: null,
               },
+              recordHistory: false,
             });
           }, 300);
 
@@ -184,9 +187,10 @@ export const DragDropContext = ({ children }: { children: ReactNode }) => {
                   id: source.id.toString(),
                 },
               },
+              recordHistory: false,
             });
           } else {
-            dispatch({
+            deferred?.dispatch({
               type: "move",
               sourceZone: sourceData.group,
               sourceIndex: sourceData.index,
@@ -205,6 +209,8 @@ export const DragDropContext = ({ children }: { children: ReactNode }) => {
           const isNewComponent = event.operation.source?.data.type === "drawer";
 
           setDragMode(isNewComponent ? "new" : "existing");
+
+          deferred?.start();
 
           dispatch({
             type: "setUi",
