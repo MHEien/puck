@@ -48,8 +48,8 @@ export function useDragListener(
 }
 
 export const DragDropContext = ({ children }: { children: ReactNode }) => {
-  const { state, config, dispatch, deferred } = useAppContext();
-  const { data } = deferred?.isDeferred ? deferred.state || state : state;
+  const { state, config, dispatch } = useAppContext();
+  const { data } = state;
   const [manager] = useState(new DragDropManager({ plugins: [Feedback] }));
 
   const [draggedItem, setDraggedItem] = useState<Draggable | null>();
