@@ -1,16 +1,7 @@
 import { AppState, Config } from "../types/Config";
-import {
-  createReducer,
-  InsertAction,
-  MoveAction,
-  PuckAction,
-  SetAction,
-  StateReducer,
-} from "../reducer";
+import { createReducer, PuckAction, StateReducer } from "../reducer";
 import { useReducer, useState } from "react";
 import { mergeActions } from "./merge-actions";
-
-type SupportedAction = SetAction | InsertAction | MoveAction;
 
 /**
  * useDeferred creates a clone of the appState, applying certain actions (insert, move) to the clone
@@ -35,12 +26,12 @@ export function useDeferred<UserConfig extends Config = Config>(
 ) {
   // Used for making deferred data changes
   const [deferredReducer] = useState(() =>
-    createReducer<UserConfig, SupportedAction>({ config })
+    createReducer<UserConfig>({ config })
   );
 
   const [isDeferred, setIsDeferring] = useState(false);
   const [deferredActions, setDeferredActions] = useState<PuckAction[]>([]);
-  const [state, deferredDispatch] = useReducer<StateReducer<SupportedAction>>(
+  const [state, deferredDispatch] = useReducer<StateReducer>(
     deferredReducer,
     appState
   );

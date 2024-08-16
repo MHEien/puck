@@ -9,16 +9,13 @@ export * from "./data";
 
 export type ActionType = "insert" | "reorder";
 
-export type StateReducer<SupportedAction = PuckAction> = Reducer<
-  AppState,
-  SupportedAction
->;
+export type StateReducer = Reducer<AppState, PuckAction>;
 
-function storeInterceptor<SupportedAction extends PuckAction = PuckAction>(
-  reducer: StateReducer<SupportedAction>,
+function storeInterceptor(
+  reducer: StateReducer,
   record?: (appState: AppState) => void
 ) {
-  return (state: AppState, action: SupportedAction) => {
+  return (state: AppState, action: PuckAction) => {
     const newAppState = reducer(state, action);
 
     const isValidType = ![
@@ -52,17 +49,14 @@ export const setAction = (state: AppState, action: SetAction) => {
   return { ...state, ...action.state(state) };
 };
 
-export function createReducer<
-  UserConfig extends Config = Config,
-  SupportedAction extends PuckAction = PuckAction
->({
+export function createReducer<UserConfig extends Config = Config>({
   config,
   record,
 }: {
   config: UserConfig;
   record?: (appState: AppState) => void;
-}): StateReducer<SupportedAction> {
-  return storeInterceptor<SupportedAction>((state, action) => {
+}): StateReducer {
+  return storeInterceptor((state, action) => {
     const currentState = state;
 
     let newState = {

@@ -1,15 +1,9 @@
 import { defaultAppState } from "../../components/Puck/context";
-import { PreviewAction, SetUiAction, createReducer } from "../../reducer";
+import { SetUiAction, createReducer } from "../../reducer";
 import { AppState, Config } from "../../types/Config";
 
-type Props = {
-  Comp: {
-    prop: string;
-  };
-};
-
 describe("State reducer", () => {
-  const config: Config<Props> = {
+  const config: Config = {
     components: {
       Comp: {
         defaultProps: { prop: "example" },

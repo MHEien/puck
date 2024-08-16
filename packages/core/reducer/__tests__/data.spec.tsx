@@ -2,7 +2,6 @@ import {
   DuplicateAction,
   InsertAction,
   MoveAction,
-  PreviewAction,
   RegisterZoneAction,
   RemoveAction,
   ReorderAction,
@@ -21,11 +20,6 @@ jest.mock("../../lib/generate-id");
 
 const mockedGenerateId = generateId as jest.MockedFunction<typeof generateId>;
 
-type Props = {
-  Comp: {
-    prop: string;
-  };
-};
 const defaultData: Data = {
   root: { props: { title: "" } },
   content: [],
@@ -35,7 +29,7 @@ const defaultData: Data = {
 const defaultUi: UiState = defaultAppState.ui;
 
 describe("Data reducer", () => {
-  const config: Config<Props> = {
+  const config: Config = {
     components: {
       Comp: {
         defaultProps: { prop: "example" },
