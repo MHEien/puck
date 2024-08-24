@@ -16,8 +16,10 @@ import { useAppContext } from "../Puck/context";
 import { Loader } from "../Loader";
 import { useSortable } from "@dnd-kit/react/sortable";
 import { createPortal } from "react-dom";
-import { pointerIntersection } from "@dnd-kit/collision";
+
 import { dropZoneContext, DropZoneProvider } from "../DropZone";
+import { createDynamicCollisionDetector } from "./collision/dynamic";
+import { DragAxis } from "./collision/dynamic/get-direction";
 
 const getClassName = getClassNameFactory("DraggableComponent", styles);
 
@@ -40,6 +42,7 @@ export const DraggableComponent = ({
   label,
   indicativeHover = false,
   isEnabled,
+  dragAxis,
 }: {
   children: (ref: Ref<any>) => ReactNode;
   componentType: string;
@@ -53,6 +56,7 @@ export const DraggableComponent = ({
   isLoading: boolean;
   isEnabled?: boolean;
   indicativeHover?: boolean;
+  dragAxis: DragAxis;
 }) => {
   const { zoomConfig, dispatch, iframe, state } = useAppContext();
   const isModifierHeld = useModifierHeld("Alt");
@@ -64,7 +68,7 @@ export const DraggableComponent = ({
     group: zoneCompound,
     data: { group: zoneCompound, index, componentType },
     collisionPriority: isEnabled ? collisionPriority : 0,
-    // collisionDetector: pointerIntersection,
+    collisionDetector: createDynamicCollisionDetector(dragAxis),
     disabled: !isEnabled,
   });
 

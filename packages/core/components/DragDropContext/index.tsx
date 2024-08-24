@@ -17,6 +17,7 @@ import type { Draggable, Droppable } from "@dnd-kit/dom";
 import { getItem, ItemSelector } from "../../lib/get-item";
 import { PathData } from "../DropZone/context";
 import { getZoneId } from "../../lib/get-zone-id";
+import { Direction } from "../DraggableComponent/collision/dynamic";
 
 type Events = DragDropEvents<Draggable, Droppable, DragDropManager>;
 type DragCbs = Partial<{ [eventName in keyof Events]: Events[eventName][] }>;
@@ -145,7 +146,7 @@ export const DragDropContext = ({ children }: { children: ReactNode }) => {
           // Drag end can sometimes trigger after drag
           if (!draggedItem) return;
 
-          const { source, target } = event.operation;
+          const { source, target, collision } = event.operation;
 
           if (!target || !source) return;
 
@@ -154,16 +155,31 @@ export const DragDropContext = ({ children }: { children: ReactNode }) => {
 
           const isOverZone = targetData.zone;
 
+          let sourceZone = sourceData.group;
+          let sourceIndex = sourceData.index;
           let targetZone = targetData.group;
           let targetIndex = targetData.index;
+
+          const [sourceId] = (source.id as string).split(":");
+          const [targetId] = (target.id as string).split(":");
+
+          const direction = collision?.data?.direction as Direction;
+
+          const collisionPosition =
+            direction === "up" || direction === "left" ? "before" : "after";
+
+          if (targetIndex >= sourceIndex && sourceZone === targetZone) {
+            targetIndex = targetIndex - 1;
+          }
+
+          if (collisionPosition === "after") {
+            targetIndex = targetIndex + 1;
+          }
 
           if (isOverZone) {
             targetZone = target.id.toString();
             targetIndex = 0; // TODO place at end
           }
-
-          const [sourceId] = (source.id as string).split(":");
-          const [targetId] = (target.id as string).split(":");
 
           // Abort if dragging over self or descendant
           if (

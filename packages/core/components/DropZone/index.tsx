@@ -1,4 +1,4 @@
-import { useCallback, useContext, useEffect, useRef } from "react";
+import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { DraggableComponent } from "../DraggableComponent";
 import { getItem } from "../../lib/get-item";
 import { setupZone } from "../../lib/setup-zone";
@@ -15,6 +15,7 @@ import { useDroppable } from "@dnd-kit/react";
 import { DrawerItemInner } from "../Drawer";
 import { pointerIntersection } from "@dnd-kit/collision";
 import { insert } from "../../lib/insert";
+import { DragAxis } from "../DraggableComponent/collision/dynamic/get-direction";
 
 const getClassName = getClassNameFactory("DropZone", styles);
 
@@ -240,6 +241,25 @@ function DropZoneEdit({
         })
       : content;
 
+  const [dragAxis, setDragAxis] = useState<DragAxis>("y");
+
+  useEffect(() => {
+    if (ref.current) {
+      const computedStyle = window.getComputedStyle(ref.current);
+
+      if (computedStyle.display === "grid") {
+        setDragAxis("dynamic");
+      } else if (
+        computedStyle.display === "flex" &&
+        computedStyle.flexDirection === "row"
+      ) {
+        setDragAxis("dynamic");
+      } else {
+        setDragAxis("y");
+      }
+    }
+  }, [ref]);
+
   return (
     <div
       className={`${getClassName({
@@ -321,6 +341,7 @@ function DropZoneEdit({
             isSelected={isSelected}
             label={label}
             isEnabled={isEnabled}
+            dragAxis={dragAxis}
           >
             {(dragRef) =>
               componentConfig?.inline ? (
