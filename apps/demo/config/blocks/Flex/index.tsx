@@ -8,47 +8,48 @@ import { Section } from "../../components/Section";
 const getClassName = getClassNameFactory("Flex", styles);
 
 export type FlexProps = {
-  items: { minItemWidth?: number }[];
-  minItemWidth: number;
+  direction: "row" | "column";
+  gap: number;
+  wrap: "wrap" | "nowrap";
 };
 
 export const Flex: ComponentConfig<FlexProps> = {
   fields: {
-    items: {
-      type: "array",
-      arrayFields: {
-        minItemWidth: {
-          label: "Minimum Item Width",
-          type: "number",
-          min: 0,
-        },
-      },
-      getItemSummary: (_, id) => `Item ${id + 1}`,
+    direction: {
+      label: "Direction",
+      type: "radio",
+      options: [
+        { label: "row", value: "row" },
+        { label: "column", value: "column" },
+      ],
     },
-    minItemWidth: {
-      label: "Minimum Item Width",
+    gap: {
+      label: "Gap",
       type: "number",
       min: 0,
     },
+    wrap: {
+      label: "Wrap",
+      type: "radio",
+      options: [
+        { label: "true", value: "wrap" },
+        { label: "false", value: "nowrap" },
+      ],
+    },
   },
   defaultProps: {
-    items: [{}, {}],
-    minItemWidth: 356,
+    direction: "row",
+    gap: 24,
+    wrap: "wrap",
   },
-  render: ({ items, minItemWidth }) => {
+  render: ({ direction, gap, wrap }) => {
     return (
       <Section>
-        <div className={getClassName()}>
-          {items.map((item, idx) => (
-            <div
-              key={idx}
-              className={getClassName("item")}
-              style={{ minWidth: item.minItemWidth || minItemWidth }}
-            >
-              <DropZone zone={`item-${idx}`} />
-            </div>
-          ))}
-        </div>
+        <DropZone
+          className={getClassName()}
+          style={{ flexDirection: direction, gap, flexWrap: wrap }}
+          zone="flex"
+        />
       </Section>
     );
   },
