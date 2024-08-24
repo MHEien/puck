@@ -14,6 +14,8 @@
 
 .DropZone:not(.DropZone--hasChildren) {
   background: color-mix(in srgb, var(--puck-color-azure-09) 30%, transparent);
+  min-height: 0;
+  min-width: 0;
   outline: 2px dashed var(--puck-color-azure-08);
 }
 
