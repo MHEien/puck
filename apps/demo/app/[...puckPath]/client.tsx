@@ -1,9 +1,10 @@
 "use client";
 
-import { Button, Puck, Render } from "@/core";
+import { Button, Data, Puck, Render } from "@/core";
 import headingAnalyzer from "@/plugin-heading-analyzer/src/HeadingAnalyzer";
 import config from "../../config";
 import { useDemoData } from "../../lib/use-demo-data";
+import { createDocument } from "../../lib/fetch/db";
 
 export function Client({ path, isEdit }: { path: string; isEdit: boolean }) {
   const { data, resolvedData, key } = useDemoData({
@@ -11,14 +12,21 @@ export function Client({ path, isEdit }: { path: string; isEdit: boolean }) {
     isEdit,
   });
 
+  const save = async () => {
+    await createDocument("page_content", {
+      path,
+      content: JSON.stringify(data),
+    });
+  };
+
   if (isEdit) {
     return (
       <div>
         <Puck
           config={config}
           data={data}
-          onPublish={async (data) => {
-            localStorage.setItem(key, JSON.stringify(data));
+          onPublish={async (data: Data) => {
+            await save();
           }}
           plugins={[headingAnalyzer]}
           headerPath={path}
